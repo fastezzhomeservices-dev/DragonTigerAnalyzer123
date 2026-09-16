@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="14dp">
+    <TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="DRAGON TIGER ANALYZER" android:textSize="22sp" android:textStyle="bold" android:gravity="center" android:padding="10dp"/>
+    <TextView android:id="@+id/roundCount" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Rounds: 0" android:textSize="16sp"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="NEW ROUND" android:textStyle="bold" android:textSize="18sp" android:paddingTop="12dp"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <Spinner android:id="@+id/dragonSpinner" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1"/>
+        <Spinner android:id="@+id/tigerSpinner" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:layout_marginStart="8dp"/>
+    </LinearLayout>
+    <Spinner android:id="@+id/resultSpinner" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="8dp"/>
+    <Button android:id="@+id/addButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ADD RESULT"/>
+    <Button android:id="@+id/clearButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="CLEAR ALL"/>
+
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="LAST 10 RESULTS" android:textStyle="bold" android:textSize="18sp" android:paddingTop="14dp"/>
+    <LinearLayout android:id="@+id/patternRow" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center" android:padding="6dp"/>
+    <TextView android:id="@+id/patternText" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Pattern: -" android:textSize="17sp" android:textStyle="bold" android:padding="6dp"/>
+
+    <TextView android:id="@+id/summary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:textSize="15sp" android:padding="8dp" android:background="@color/panel"/>
+
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="3-RESULT PATTERN ANALYSIS" android:textStyle="bold" android:textSize="18sp" android:paddingTop="14dp"/>
+    <TextView android:id="@+id/patternAnalysis" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enter at least 10 rounds." android:textSize="14sp" android:padding="8dp"/>
+
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="NUMBER TRANSITION ANALYSIS" android:textStyle="bold" android:textSize="18sp" android:paddingTop="14dp"/>
+    <TextView android:id="@+id/numberAnalysis" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="" android:textSize="14sp" android:padding="8dp"/>
+</LinearLayout>
+</ScrollView>
