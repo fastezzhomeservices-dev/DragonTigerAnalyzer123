@@ -2,12 +2,12 @@
     <application android:theme="@style/AppTheme" android:label="Dragon Tiger Analyzer" android:icon="@drawable/app_icon" android:roundIcon="@drawable/app_icon" android:allowBackup="true" android:supportsRtl="true">
         <activity android:name=".ImportActivity" android:screenOrientation="portrait" />
         <activity android:name=".EditActivity" android:screenOrientation="portrait" />
-        <activity android:name=".CardMainActivity" android:screenOrientation="portrait" android:exported="true">
+        <activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="false" />
+        <activity android:name=".CardMainActivity" android:screenOrientation="portrait" android:exported="false" />
     </application>
 </manifest>
