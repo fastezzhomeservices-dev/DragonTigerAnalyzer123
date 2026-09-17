@@ -1,0 +1,21 @@
+name: Build PC EXE
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'pc_analyzer.py'
+      - '.github/workflows/build-pc-exe.yml'
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pyinstaller openpyxl
+      - run: pyinstaller --onefile --windowed --name DragonTigerAnalyzerPC pc_analyzer.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DragonTigerAnalyzer-PC-EXE
+          path: dist/DragonTigerAnalyzerPC.exe
