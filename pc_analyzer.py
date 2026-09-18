@@ -779,7 +779,7 @@ class App:
         # 60% compact Pair Result popup.
         win=tk.Toplevel(self.root)
         win.title('Pair Result')
-        win.geometry('198x234')
+        win.geometry('198x252')
         win.resizable(False,False)
         win.configure(bg='white')
         try:
@@ -820,8 +820,25 @@ class App:
                  font=('Segoe UI',8,'bold')).pack(pady=(1,1))
         tk.Label(win,text=f'Dragon {self.oe(d) if d else "-"} | Tiger {self.oe(t) if t else "-"}',
                  bg='white',fg='#475569',font=('Segoe UI',6,'bold')).pack(pady=1)
+        def delete_this_result():
+            try:
+                idx=next((i for i,x in enumerate(self.pair_history) if x is item), -1)
+                if idx < 0:
+                    idx=next((i for i,x in enumerate(self.pair_history)
+                              if x.get('time')==item.get('time') and x.get('pair')==item.get('pair')
+                              and x.get('prediction')==item.get('prediction')), -1)
+                if idx >= 0:
+                    del self.pair_history[idx]
+                    self.save_settings()
+                    self.render_pair_history()
+                win.destroy()
+            except Exception as e:
+                messagebox.showerror('Delete Result',str(e))
+
+        tk.Button(win,text='DELETE RESULT',command=delete_this_result,bg='#b91c1c',fg='white',
+                  font=('Segoe UI',7,'bold'),relief='groove',bd=1,padx=7,pady=2).pack(pady=(1,2))
         tk.Button(win,text='CLOSE',command=win.destroy,bg='#0758d9',fg='white',
-                  font=('Segoe UI',7,'bold'),relief='groove',bd=1,padx=7,pady=2).pack(pady=2)
+                  font=('Segoe UI',7,'bold'),relief='groove',bd=1,padx=7,pady=2).pack(pady=1)
         win.transient(self.root)
         win.lift()
 
