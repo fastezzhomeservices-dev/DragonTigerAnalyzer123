@@ -286,13 +286,21 @@ class App:
         tk.Label(brand,text='SERVICES',bg='#06183a',fg='#ffe000',font=('Segoe UI',42,'bold')).place(x=365,y=6)
         sep=tk.Frame(header,bg='white',width=2); sep.pack(side='left',fill='y',pady=14,padx=18)
         contact=tk.Frame(header,bg='#06183a'); contact.pack(side='left',fill='y',pady=8)
-        tk.Label(contact,text='🟢  WhatsApp Business',bg='#06183a',fg='#25D366',font=('Segoe UI',18,'bold')).pack(anchor='w',pady=(3,1))
-        tk.Label(contact,text='Chat with Us on WhatsApp',bg='#06183a',fg='white',font=('Segoe UI',13,'bold')).pack(anchor='w')
+        wa_icon=tk.Canvas(contact,width=48,height=48,bg='#06183a',highlightthickness=0)
+        wa_icon.pack(side='left',padx=(0,8),pady=(3,0))
+        wa_icon.create_oval(2,2,46,46,fill='#25D366',outline='white',width=2)
+        wa_icon.create_text(24,24,text='☎',fill='white',font=('Segoe UI',22,'bold'))
+        wa_text=tk.Frame(contact,bg='#06183a')
+        wa_text.pack(side='left',fill='y')
+        tk.Label(wa_text,text='WhatsApp Business',bg='#06183a',fg='#25D366',font=('Segoe UI',18,'bold')).pack(anchor='w',pady=(3,0))
+        tk.Label(wa_text,text='Chat Now',bg='#06183a',fg='white',font=('Segoe UI',11,'bold')).pack(anchor='w')
+        tk.Label(contact,text='https://wa.me/91XXXXXXXXXX',bg='#06183a',fg='#25D366',
+                 font=('Segoe UI',11,'bold')).pack(side='left',padx=(12,0),pady=(24,0))
         tk.Button(contact,text='CONTACT US',command=self.open_contact_us,bg='#06183a',fg=YELLOW,
                   activebackground='#0b72ff',activeforeground='white',font=('Segoe UI',12,'bold'),
                   relief='groove',bd=1,padx=16,pady=4).pack(anchor='w',pady=(4,0))
 
-        ver=tk.Label(header,text='PC ANALYZER v2.0  |  DEVELOPER BY S K SINGH',bg='#06183a',fg=YELLOW,font=('Segoe UI',17,'bold'),
+        ver=tk.Label(header,text='PC ANALYZER v2.0  |  Developed by  SK SINGH',bg='#06183a',fg=YELLOW,font=('Segoe UI',17,'bold'),
                      relief='groove',bd=1,padx=18,pady=8)
         ver.pack(side='right',padx=20)
 
@@ -301,7 +309,7 @@ class App:
         nav_buttons=[
             ('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),
             ('LIVE DRAGON TIGER',self.open_live_browser),('THEME / BACKGROUND',self.open_theme_settings),
-            ('PAIR SEARCH',self.open_pair_search),('PAIR HISTORY',self.show_pair_history),
+            ('PAIR SEARCH',self.open_pair_search),
             ('RESULT HISTORY',self.show_result_history),
             ('PRODUCTION RESULT ENTRY',self.open_production_entry),
             ('DOWNLOAD HISTORY',self.download_history)
@@ -315,8 +323,41 @@ class App:
         ph=tk.LabelFrame(self.root,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
                          font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         ph.pack(fill='x',padx=18,pady=3)
-        self.pair_history_frame=tk.Frame(ph,bg=PANEL,height=72)
-        self.pair_history_frame.pack(fill='x',padx=8,pady=3)
+        # Main Pair Search controls are part of the approved reference layout.
+        search_row=tk.Frame(ph,bg=PANEL,height=78)
+        search_row.pack(fill='x',padx=8,pady=(3,0))
+        search_row.pack_propagate(False)
+
+        left_search=tk.Frame(search_row,bg=PANEL,width=360)
+        left_search.pack(side='left',fill='y',padx=(4,8))
+        left_search.pack_propagate(False)
+        tk.Label(left_search,text='Enter Pair (e.g. Q6)',bg=PANEL,fg=WHITE,
+                 font=('Segoe UI',10,'bold')).pack(anchor='w',pady=(7,4))
+        search_controls=tk.Frame(left_search,bg=PANEL)
+        search_controls.pack(anchor='w')
+        self.main_pair_var=tk.StringVar(value=self.pair.get() or 'Q6')
+        pair_entry=tk.Entry(search_controls,textvariable=self.main_pair_var,width=18,
+                            bg='#0b1730',fg=WHITE,insertbackground=WHITE,
+                            font=('Segoe UI',12,'bold'),relief='groove',bd=1)
+        pair_entry.pack(side='left',ipady=7)
+        def run_main_pair_search(event=None):
+            p=self.main_pair_var.get().strip().upper().replace(' ','')
+            if len(p)==2 and p[0] in CARDS and p[1] in CARDS:
+                self.pair.set(p)
+                self.analyze()
+            else:
+                messagebox.showwarning('Pair Search','Enter a valid pair such as Q6, JQ, 10A, etc.')
+        tk.Button(search_controls,text='SEARCH',command=run_main_pair_search,
+                  bg=BLUE,fg='white',activebackground='#0b78ff',activeforeground='white',
+                  font=('Segoe UI',10,'bold'),relief='groove',bd=1,
+                  padx=18,pady=7).pack(side='left',padx=(12,0))
+        pair_entry.bind('<Return>',run_main_pair_search)
+
+        divider=tk.Frame(search_row,bg=BORDER,width=1)
+        divider.pack(side='left',fill='y',pady=4)
+
+        self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=72)
+        self.pair_history_frame.pack(side='left',fill='both',expand=True,padx=(8,0))
         self.pair_history_frame.pack_propagate(False)
         self.render_pair_history()
 
