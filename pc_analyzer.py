@@ -40,7 +40,7 @@ def normalize_result(v):
 class App:
     def __init__(self, root):
         self.root = root
-        root.title('Dragon Tiger Analyzer - PC')
+        root.title('Dragon Tiger Analyzer - PC v2.0')
         root.geometry('1280x720')
         root.minsize(1100, 650)
         root.configure(bg='#111827')
@@ -251,7 +251,7 @@ class App:
         header.pack(fill='x')
         for text, bg, width in [('DRAGON','#991b1b',14),('TIE','#312e81',9),('TIGER','#111827',14),('PAIR','#991b1b',14)]:
             tk.Label(header,text=text,bg=bg,fg='white',font=('Segoe UI',16,'bold'),width=width,pady=10).pack(side='left',padx=4,pady=9)
-        tk.Label(header,text='PC ANALYZER',bg='#7f1d1d',fg='#fde68a',font=('Segoe UI',15,'bold')).pack(side='right',padx=20)
+        tk.Label(header,text='PC ANALYZER v2.0',bg='#7f1d1d',fg='#fde68a',font=('Segoe UI',15,'bold')).pack(side='right',padx=20)
 
         tools = tk.Frame(self.root,bg='#111827'); tools.pack(fill='x',padx=18,pady=(11,4))
         for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),('LIVE DRAGON TIGER',self.open_live_browser),('THEME / BACKGROUND',self.open_theme_settings)]:
