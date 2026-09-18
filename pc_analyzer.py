@@ -277,7 +277,9 @@ class App:
         widths={'S NO':60,'ROUND ID':155,'TIME':135,'DRAGON':75,'TIGER':75,'RESULT':75,'PAIR':75,'D O/E':85,'T O/E':85,'PREV RESULT':105}
         for c in cols:
             self.tree.heading(c,text=c); self.tree.column(c,width=widths[c],anchor='center')
-        for tag,color in [('dragon','#14532d'),('tiger','#92400e'),('tie','#4c1d95')]: self.tree.tag_configure(tag,background=color,foreground='white')
+        # Unique result colors: D=green, T=orange, TIE=purple.
+        for tag,color in [('dragon','#16a34a'),('tiger','#ea580c'),('tie','#7c3aed')]:
+            self.tree.tag_configure(tag,background=color,foreground='white')
         self.report_tree.tag_configure('dragon',background='#14532d',foreground='white')
         self.report_tree.tag_configure('tiger',background='#92400e',foreground='white')
         self.report_tree.tag_configure('tie',background='#4c1d95',foreground='white')
