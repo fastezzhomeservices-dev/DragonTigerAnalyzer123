@@ -246,6 +246,13 @@ class App:
         s.configure('Treeview', background='#1f2937', fieldbackground='#1f2937', foreground='#f9fafb', rowheight=32, font=('Segoe UI',9))
         s.configure('Treeview.Heading', background='#7f1d1d', foreground='white', font=('Segoe UI',9,'bold'), padding=7)
 
+    def open_contact_us(self):
+        try:
+            import webbrowser
+            webbrowser.open('https://wa.me/')
+        except Exception as e:
+            messagebox.showerror('CONTACT US', f'Unable to open WhatsApp: {e}')
+
     def build_ui(self):
         # FINAL PC LAYOUT — matches the approved FASTEZZ SERVICES reference.
         BG = '#061326'
@@ -277,12 +284,13 @@ class App:
         brand.pack(side='left',fill='y')
         tk.Label(brand,text='FASTEZZ',bg='#06183a',fg='white',font=('Segoe UI',42,'bold')).pack(anchor='w',pady=(6,0))
         tk.Label(brand,text='SERVICES',bg='#06183a',fg='#ffe000',font=('Segoe UI',42,'bold')).place(x=365,y=6)
-        tk.Label(brand,text='Your Complete Home Service Solution',bg='#06183a',fg='white',font=('Segoe UI',14,'bold')).pack(anchor='w',padx=2,pady=(0,4))
-
-        sep=tk.Frame(header,bg='white',width=2); sep.pack(side='left',fill='y',pady=14,padx=24)
-        contact=tk.Frame(header,bg='#06183a'); contact.pack(side='left',fill='y',pady=10)
-        tk.Label(contact,text='◉  www.fastezz.com',bg='#06183a',fg='white',font=('Segoe UI',17,'bold')).pack(anchor='w',pady=(7,2))
-        tk.Label(contact,text='✉  Contact@fastezz.com',bg='#06183a',fg='white',font=('Segoe UI',17,'bold')).pack(anchor='w',pady=2)
+        sep=tk.Frame(header,bg='white',width=2); sep.pack(side='left',fill='y',pady=14,padx=18)
+        contact=tk.Frame(header,bg='#06183a'); contact.pack(side='left',fill='y',pady=8)
+        tk.Label(contact,text='🟢  WhatsApp Business',bg='#06183a',fg='#25D366',font=('Segoe UI',18,'bold')).pack(anchor='w',pady=(3,1))
+        tk.Label(contact,text='Chat with Us on WhatsApp',bg='#06183a',fg='white',font=('Segoe UI',13,'bold')).pack(anchor='w')
+        tk.Button(contact,text='CONTACT US',command=self.open_contact_us,bg='#06183a',fg=YELLOW,
+                  activebackground='#0b72ff',activeforeground='white',font=('Segoe UI',12,'bold'),
+                  relief='groove',bd=1,padx=16,pady=4).pack(anchor='w',pady=(4,0))
 
         ver=tk.Label(header,text='PC ANALYZER v2.0',bg='#06183a',fg=YELLOW,font=('Segoe UI',17,'bold'),
                      relief='groove',bd=1,padx=18,pady=8)
