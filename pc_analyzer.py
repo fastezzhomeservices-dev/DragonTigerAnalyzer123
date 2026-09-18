@@ -813,7 +813,6 @@ class App:
                  bg='#111827',fg='#ffe600',font=('Segoe UI',8,'bold'),
                  relief='groove',bd=1,padx=8,pady=4).pack(side='right',padx=(4,2),pady=8)
 
-            return
         if correct not in ('YES','NO'):
             messagebox.showwarning('Save Result','Select YES or NO for whether the prediction came.')
             return
