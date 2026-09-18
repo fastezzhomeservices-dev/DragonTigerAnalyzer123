@@ -39,8 +39,8 @@ class App:
     def __init__(self, root):
         self.root = root
         root.title('Dragon Tiger Analyzer - PC')
-        root.geometry('1320x860')
-        root.minsize(1120, 720)
+        root.geometry('1280x720')
+        root.minsize(1100, 650)
         root.configure(bg='#111827')
         self.data = []
         self.dr = tk.StringVar(value='A')
@@ -53,7 +53,7 @@ class App:
         self.status = tk.StringVar(value='Ready')
         self.settings_dir = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'DragonTigerAnalyzer')
         self.settings_file = os.path.join(self.settings_dir, 'settings.json')
-        self.theme_name = 'Dark Red'
+        self.theme_name = 'Midnight Blue'
         self.background_path = ''
         self.bg_photo = None
         self.load_settings()
@@ -66,7 +66,9 @@ class App:
         try:
             with open(self.settings_file, 'r', encoding='utf-8') as f:
                 s = json.load(f)
-            self.theme_name = s.get('theme', 'Dark Red')
+            self.theme_name = s.get('theme', 'Midnight Blue')
+            if self.theme_name == 'Dark Red':
+                self.theme_name = 'Midnight Blue'
             self.background_path = s.get('background', '')
         except Exception:
             pass
