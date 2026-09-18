@@ -1219,15 +1219,6 @@ class App:
 
 if __name__=='__main__':
     root=tk.Tk(); App(root); root.mainloop()
-,part,re.I)
-            if m:
-                result=normalize_result(m.group(1))
-                rest=m.group(2).strip()
-                cursor=self._report_circle(cv,cursor,y+(height-20)/2,result,20)+5
-                if rest:
-                    cv.create_text(cursor,y+height/2,text=rest,anchor='w',
-                                   fill='white',font=('Segoe UI',8,'bold'))
-                    cursor += max(22, len(rest)*5.3)
             else:
                 cv.create_text(cursor,y+height/2,text=part,anchor='w',
                                fill='white',font=('Segoe UI',8,'bold'))
