@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, simpledialog
 from datetime import datetime
 from collections import Counter
 import csv
@@ -45,6 +45,13 @@ class App:
         root.minsize(1100, 650)
         root.configure(bg='#111827')
         self.data = []
+        self.pair_history = []
+        self.result_history = []
+        self.current_prediction = tk.StringVar(value='')
+        self.prediction_correct = tk.StringVar(value='')
+        self.actual_dragon = tk.StringVar(value='')
+        self.actual_tiger = tk.StringVar(value='')
+        self.final_result = tk.StringVar(value='D')
         self.dr = tk.StringVar(value='A')
         self.ti = tk.StringVar(value='A')
         self.re = tk.StringVar(value='D')
@@ -76,6 +83,10 @@ class App:
             if self.theme_name == 'Dark Red':
                 self.theme_name = 'Midnight Blue'
             self.background_path = s.get('background', '')
+            self.pair_history = s.get('pair_history', []) if isinstance(s.get('pair_history', []), list) else []
+            self.result_history = s.get('result_history', []) if isinstance(s.get('result_history', []), list) else []
+            self.pair_history = self.pair_history[-100:]
+            self.result_history = self.result_history[-200:]
         except Exception:
             pass
 
@@ -83,7 +94,9 @@ class App:
         try:
             os.makedirs(self.settings_dir, exist_ok=True)
             with open(self.settings_file, 'w', encoding='utf-8') as f:
-                json.dump({'theme': self.theme_name, 'background': self.background_path}, f, indent=2)
+                json.dump({'theme': self.theme_name, 'background': self.background_path,
+                       'pair_history': self.pair_history[-100:],
+                       'result_history': self.result_history[-200:]}, f, indent=2)
         except Exception:
             pass
 
@@ -251,7 +264,35 @@ class App:
         ttk.Combobox(pair,textvariable=self.pair,values=[a+b for a in CARDS for b in CARDS],width=12).pack(side='left',padx=5)
         tk.Button(pair,text='ANALYZE',command=self.analyze,bg='#b91c1c',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=14,pady=6).pack(side='left',padx=6)
         tk.Label(pair,textvariable=self.summary,bg='#111827',fg='#fde68a',font=('Segoe UI',10,'bold')).pack(side='left',padx=20)
-        chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
+        tk.Button(pair,text='PAIR HISTORY',command=self.show_pair_history,bg='#374151',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=10,pady=6).pack(side='right',padx=5)
+        tk.Button(pair,text='RESULT HISTORY',command=self.show_result_history,bg='#374151',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=10,pady=6).pack(side='right',padx=5)
+        tk.Label(pair,text='Prediction:',bg='#111827',fg='#cbd5e1',font=('Segoe UI',9,'bold')).pack(side='left',padx=(12,3))
+        self.prediction_label=tk.Label(pair,textvariable=self.current_prediction,bg='#111827',fg='#fde68a',font=('Segoe UI',11,'bold'))
+        self.prediction_label.pack(side='left',padx=4)
+        # Pair search history: latest 15+ searches, rendered as round D/T/TIE markers.
+        ph=tk.LabelFrame(self.root,text='  PAIR SEARCH HISTORY — LATEST 15+  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
+        ph.pack(fill='x',padx=18,pady=4)
+        self.pair_history_frame=tk.Frame(ph,bg='#111827',height=78)
+        self.pair_history_frame.pack(fill='x',padx=8,pady=5)
+        self.pair_history_frame.pack_propagate(False)
+        self.render_pair_history()
+
+        # Production/result entry: save the displayed prediction together with the manually verified outcome.
+        entry=tk.LabelFrame(self.root,text='  PRODUCTION RESULT ENTRY  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
+        entry.pack(fill='x',padx=18,pady=4)
+        tk.Label(entry,text='Prediction',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(10,3),pady=7)
+        tk.Label(entry,textvariable=self.current_prediction,bg='#111827',fg='#fde68a',font=('Segoe UI',10,'bold')).pack(side='left',padx=4)
+        tk.Label(entry,text='Came?',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(14,3))
+        ttk.Combobox(entry,textvariable=self.prediction_correct,values=['YES','NO'],state='readonly',width=7).pack(side='left',padx=3)
+        tk.Label(entry,text='D:',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(12,2))
+        ttk.Combobox(entry,textvariable=self.actual_dragon,values=CARDS,state='readonly',width=5).pack(side='left')
+        tk.Label(entry,text='T:',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(8,2))
+        ttk.Combobox(entry,textvariable=self.actual_tiger,values=CARDS,state='readonly',width=5).pack(side='left')
+        tk.Label(entry,text='Final:',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(8,2))
+        ttk.Combobox(entry,textvariable=self.final_result,values=RESULTS,state='readonly',width=7).pack(side='left')
+        tk.Button(entry,text='SAVE RESULT',command=self.save_production_result,bg='#15803d',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=5).pack(side='left',padx=8)
+        tk.Button(entry,text='DOWNLOAD HISTORY',command=self.download_history,bg='#374151',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=5).pack(side='left',padx=4)
+                chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         chart_box.pack(fill='x',padx=18,pady=6)
         self.chart_frame=tk.Frame(chart_box,bg='#111827',height=95); self.chart_frame.pack(fill='x',padx=10,pady=8)
         # Occurrence report: one visible Treeview only.
@@ -418,15 +459,36 @@ class App:
 
     def analyze(self):
         p=self.pair.get().upper().strip()
+        # Record every Pair Analysis search without changing the existing statistical analysis.
+        search_time=datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        existing_rows=[r for r in self.data if r.get('dragon','')+r.get('tiger','')==p]
+        search_sequence=[r.get('result','') for r in existing_rows if r.get('result','') in RESULTS]
+        self.pair_history.append({
+            'time':search_time,'pair':p,
+            'prediction': '',
+            'sequence': search_sequence[-30:]
+        })
+        self.pair_history=self.pair_history[-100:]
+        self.render_pair_history()
+        self.save_settings()
+
+        rows=existing_rows
         rows=[r for r in self.data if r.get('dragon','')+r.get('tiger','')==p]
         cnt=Counter(r.get('result') for r in rows)
         for x in self.report_tree.get_children(): self.report_tree.delete(x)
         if not rows:
             self.summary.set(f'PAIR {p} | NO HISTORY')
-
+            self.current_prediction.set('NO PREDICTION')
+            if self.pair_history:
+                self.pair_history[-1]['prediction']=''
+                self.render_pair_history(); self.save_settings()
             return
         maxres=max(RESULTS,key=lambda x:cnt[x]); pct=cnt[maxres]/len(rows)*100
         self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MOST {maxres} ({pct:.1f}%)')
+        self.current_prediction.set(maxres)
+        if self.pair_history:
+            self.pair_history[-1]['prediction']=maxres
+            self.render_pair_history(); self.save_settings()
         self.draw_frequency_chart(rows)
 
         for idx,r in enumerate(self.data):
@@ -439,6 +501,146 @@ class App:
                 q=self.data[j]; nxt.append(f'{q.get("result","")} {q.get("dragon","")}{q.get("tiger","")}')
             while len(nxt)<6: nxt.append('-')
             self.report_tree.insert('', 'end', values=(r.get('sno',''),' | '.join(prev) if prev else '-',f'{r.get("result","")} {p}',nxt[0],nxt[1],nxt[2],nxt[3],nxt[4],nxt[5]),tags=(self.tag_for(r.get('result','D')),))
+
+    def _circle(self, parent, result, size=42):
+        cv=tk.Canvas(parent,width=size,height=size+12,bg='#111827',highlightthickness=0)
+        color=RESULT_COLORS.get(result,'#374151')
+        cv.create_oval(2,2,size-2,size-2,fill=color,outline='')
+        cv.create_text(size/2,size/2,text=result,fill='white',font=('Segoe UI',9,'bold'))
+        return cv
+
+    def render_pair_history(self):
+        if not hasattr(self,'pair_history_frame'): return
+        for w in self.pair_history_frame.winfo_children(): w.destroy()
+        items=self.pair_history[-15:]
+        if not items:
+            tk.Label(self.pair_history_frame,text='PAIR SEARCH HISTORY WILL APPEAR HERE',bg='#111827',fg='#9ca3af',font=('Segoe UI',9,'bold')).pack(pady=25)
+            return
+        for item in items:
+            card=tk.Frame(self.pair_history_frame,bg='#111827',width=150,height=65)
+            card.pack(side='left',padx=3); card.pack_propagate(False)
+            tk.Label(card,text=item.get('pair','-'),bg='#111827',fg='white',font=('Segoe UI',8,'bold')).pack()
+            row=tk.Frame(card,bg='#111827'); row.pack()
+            pred=item.get('prediction','')
+            if pred:
+                self._circle(row,pred,38).pack(side='left',padx=1)
+            else:
+                self._circle(row,'TIE',38).pack(side='left',padx=1)
+            seq=item.get('sequence',[])
+            tk.Label(row,text=' '.join(seq[-8:]) if seq else 'NO DATA',bg='#111827',fg='#d1d5db',font=('Segoe UI',7,'bold')).pack(side='left',padx=3)
+        # Keep a compact status for more than 15 stored searches.
+        tk.Label(self.pair_history_frame,text=f'Total saved searches: {len(self.pair_history)}',bg='#111827',fg='#9ca3af',font=('Segoe UI',8)).pack(side='right',padx=8,pady=25)
+
+    def save_production_result(self):
+        prediction=normalize_result(self.current_prediction.get())
+        correct=self.prediction_correct.get().strip().upper()
+        d=clean_card(self.actual_dragon.get())
+        t=clean_card(self.actual_tiger.get())
+        final=normalize_result(self.final_result.get())
+        if not prediction or prediction not in ('D','T'):
+            messagebox.showwarning('Save Result','Run Pair Analysis first so the displayed D/T prediction can be saved.')
+            return
+        if correct not in ('YES','NO'):
+            messagebox.showwarning('Save Result','Select YES or NO for whether the prediction came.')
+            return
+        if not d or not t:
+            messagebox.showwarning('Save Result','Select both the actual D and T card numbers.')
+            return
+        if not final:
+            messagebox.showwarning('Save Result','Select the final result.')
+            return
+        record={
+            'time':datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+            'pair':self.pair.get().upper().strip(),
+            'prediction':prediction,
+            'came':correct,
+            'dragon':d,'tiger':t,'final':final
+        }
+        self.result_history.append(record)
+        self.result_history=self.result_history[-200:]
+        self.save_settings()
+        self.prediction_correct.set(''); self.actual_dragon.set(''); self.actual_tiger.set('')
+        messagebox.showinfo('Saved','Production result saved successfully.')
+        self.show_result_history()
+
+    def show_pair_history(self):
+        win=tk.Toplevel(self.root); win.title('Pair Search History'); win.geometry('900x500'); win.configure(bg=self._theme()['root'])
+        t=self._theme()
+        tk.Label(win,text='PAIR SEARCH HISTORY',bg=t['root'],fg=t['accent'],font=('Segoe UI',14,'bold')).pack(pady=10)
+        frame=tk.Frame(win,bg=t['root']); frame.pack(fill='both',expand=True,padx=12,pady=5)
+        cols=('NO','TIME','PAIR','PREDICTION','RESULT SEQUENCE','DELETE')
+        tree=ttk.Treeview(frame,columns=cols,show='headings',height=15)
+        widths={'NO':50,'TIME':150,'PAIR':80,'PREDICTION':100,'RESULT SEQUENCE':420,'DELETE':80}
+        for col in cols: tree.heading(col,text=col); tree.column(col,width=widths[col],anchor='center')
+        tree.pack(fill='both',expand=True)
+        for i,item in enumerate(reversed(self.pair_history),1):
+            seq=' '.join(item.get('sequence',[]))
+            tree.insert('', 'end',iid=str(i-1),values=(i,item.get('time',''),item.get('pair',''),item.get('prediction',''),seq,'DELETE'))
+        def delete_selected():
+            sel=tree.selection()
+            if not sel: return
+            rev_index=int(sel[0]); actual_index=len(self.pair_history)-1-rev_index
+            if 0<=actual_index<len(self.pair_history):
+                del self.pair_history[actual_index]; self.save_settings(); self.render_pair_history()
+                tree.delete(sel[0])
+                # Rebuild IDs/order after deletion.
+                for x in tree.get_children(): tree.delete(x)
+                for i,item in enumerate(reversed(self.pair_history),1):
+                    tree.insert('', 'end',iid=str(i-1),values=(i,item.get('time',''),item.get('pair',''),item.get('prediction',''),' '.join(item.get('sequence',[])),'DELETE'))
+        tk.Button(win,text='DELETE SELECTED',command=delete_selected,bg='#b91c1c',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='left',padx=12,pady=8)
+        tk.Button(win,text='DOWNLOAD HISTORY',command=self.download_history,bg='#374151',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='right',padx=12,pady=8)
+
+    def show_result_history(self):
+        win=tk.Toplevel(self.root); win.title('Production Result History'); win.geometry('1050x520'); win.configure(bg=self._theme()['root'])
+        t=self._theme()
+        tk.Label(win,text='PRODUCTION RESULT HISTORY — LATEST 15+',bg=t['root'],fg=t['accent'],font=('Segoe UI',14,'bold')).pack(pady=10)
+        frame=tk.Frame(win,bg=t['root']); frame.pack(fill='both',expand=True,padx=12,pady=5)
+        cols=('NO','TIME','PAIR','PREDICTION','CAME?','D','T','FINAL','DELETE')
+        tree=ttk.Treeview(frame,columns=cols,show='headings',height=15)
+        widths={'NO':50,'TIME':150,'PAIR':80,'PREDICTION':100,'CAME?':80,'D':60,'T':60,'FINAL':80,'DELETE':80}
+        for col in cols: tree.heading(col,text=col); tree.column(col,width=widths[col],anchor='center')
+        for i,item in enumerate(reversed(self.result_history),1):
+            tree.insert('', 'end',iid=str(i-1),values=(i,item.get('time',''),item.get('pair',''),item.get('prediction',''),item.get('came',''),item.get('dragon',''),item.get('tiger',''),item.get('final',''),'DELETE'))
+        tree.pack(fill='both',expand=True)
+        def delete_selected():
+            sel=tree.selection()
+            if not sel: return
+            rev_index=int(sel[0]); actual_index=len(self.result_history)-1-rev_index
+            if 0<=actual_index<len(self.result_history):
+                del self.result_history[actual_index]; self.save_settings()
+                for x in tree.get_children(): tree.delete(x)
+                for i,item in enumerate(reversed(self.result_history),1):
+                    tree.insert('', 'end',iid=str(i-1),values=(i,item.get('time',''),item.get('pair',''),item.get('prediction',''),item.get('came',''),item.get('dragon',''),item.get('tiger',''),item.get('final',''),'DELETE'))
+        tk.Button(win,text='DELETE SELECTED',command=delete_selected,bg='#b91c1c',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='left',padx=12,pady=8)
+        tk.Button(win,text='DOWNLOAD HISTORY',command=self.download_history,bg='#374151',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='right',padx=12,pady=8)
+
+    def download_history(self):
+        if not self.pair_history and not self.result_history:
+            messagebox.showwarning('Download History','No saved history is available.')
+            return
+        path=filedialog.asksaveasfilename(defaultextension='.xlsx',initialfile='DragonTiger_History.xlsx',filetypes=[('Excel','*.xlsx'),('CSV','*.csv')])
+        if not path: return
+        try:
+            if path.lower().endswith('.csv'):
+                rows=[['TYPE','TIME','PAIR','PREDICTION','CAME?','D','T','FINAL','RESULT SEQUENCE']]
+                for x in self.pair_history:
+                    rows.append(['PAIR SEARCH',x.get('time',''),x.get('pair',''),x.get('prediction',''),'','','','', ' '.join(x.get('sequence',[]))])
+                for x in self.result_history:
+                    rows.append(['PRODUCTION RESULT',x.get('time',''),x.get('pair',''),x.get('prediction',''),x.get('came',''),x.get('dragon',''),x.get('tiger',''),x.get('final',''),''])
+                with open(path,'w',newline='',encoding='utf-8-sig') as f: csv.writer(f).writerows(rows)
+            else:
+                from openpyxl import Workbook
+                wb=Workbook()
+                ws=wb.active; ws.title='PAIR SEARCH HISTORY'
+                ws.append(['TIME','PAIR','PREDICTION','RESULT SEQUENCE'])
+                for x in self.pair_history: ws.append([x.get('time',''),x.get('pair',''),x.get('prediction',''),' '.join(x.get('sequence',[]))])
+                ws2=wb.create_sheet('PRODUCTION RESULTS')
+                ws2.append(['TIME','PAIR','PREDICTION','CAME?','D','T','FINAL RESULT'])
+                for x in self.result_history: ws2.append([x.get('time',''),x.get('pair',''),x.get('prediction',''),x.get('came',''),x.get('dragon',''),x.get('tiger',''),x.get('final','')])
+                wb.save(path)
+            messagebox.showinfo('Download History','History downloaded successfully.')
+        except Exception as e:
+            messagebox.showerror('Download History',str(e))
 
     def draw_frequency_chart(self, rows):
         for w in self.chart_frame.winfo_children(): w.destroy()
