@@ -398,7 +398,7 @@ class App:
         chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg=PANEL,fg=YELLOW,
                                 font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         chart_box.pack(fill='x',padx=12,pady=2)
-        self.chart_frame=tk.Frame(chart_box,bg=PANEL,height=52)
+        self.chart_frame=tk.Frame(chart_box,bg=PANEL,height=28)
         self.chart_frame.pack(fill='x',padx=10,pady=3)
         self.chart_frame.pack_propagate(False)
 
