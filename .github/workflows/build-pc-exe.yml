@@ -25,11 +25,11 @@ jobs:
         run: iscc installer.iss
       - uses: actions/upload-artifact@v4
         with:
-          name: DragonTigerAnalyzer-PC-Installer-v2
-          path: installer/DragonTigerAnalyzerPC-v2.0-Setup-NEW.exe
+          name: DragonTigerAnalyzer-PC-Installer-FINAL
+          path: installer/DragonTigerAnalyzerPC-v2.0-FINAL-Setup.exe
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: DragonTigerAnalyzer-PC-EXE-v2
+          name: DragonTigerAnalyzer-PC-EXE-FINAL
           path: dist/DragonTigerAnalyzerPC.exe
           if-no-files-found: error
