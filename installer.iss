@@ -1,11 +1,11 @@
 ; Inno Setup installer for Dragon Tiger Analyzer
 [Setup]
 AppName=Dragon Tiger Analyzer
-AppVersion=1.0.0
+AppVersion=2.0.0
 DefaultDirName={autopf}\Dragon Tiger Analyzer
 DefaultGroupName=Dragon Tiger Analyzer
 OutputDir=installer
-OutputBaseFilename=DragonTigerAnalyzerPC-Setup
+OutputBaseFilename=DragonTigerAnalyzerPC-v2.0-Setup
 Compression=lzma
 SolidCompression=yes
 PrivilegesRequired=admin
