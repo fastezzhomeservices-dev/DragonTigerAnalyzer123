@@ -285,14 +285,15 @@ class App:
         header.pack(fill='x')
         header.pack_propagate(False)
 
-        # FASTEZZ SERVICES logo mark: five overlapping circular elements.
-        logo = tk.Canvas(header,width=82,height=76,bg='#06183a',highlightthickness=0)
+        # FASTEZZ SERVICES logo mark — light/white background, matching the supplied reference.
+        logo = tk.Canvas(header,width=82,height=76,bg='white',highlightthickness=0)
         logo.pack(side='left',padx=(6,1),pady=3)
-        logo.create_oval(27,2,55,30,fill='#f20aa8',outline='')
-        logo.create_oval(7,29,35,57,fill='#28d89b',outline='')
-        logo.create_oval(47,29,75,57,fill='#ffbd18',outline='')
-        logo.create_oval(27,47,55,75,fill='#2bb8ff',outline='')
-        logo.create_oval(24,25,58,59,fill='white',outline='#06183a',width=3)
+        logo.create_oval(27,2,55,30,fill='#f95678',outline='#111827',width=1)
+        logo.create_oval(7,29,35,57,fill='#10a9ad',outline='#111827',width=1)
+        logo.create_oval(47,29,75,57,fill='#ffc33d',outline='#111827',width=1)
+        logo.create_oval(27,47,55,75,fill='#10a9ad',outline='#111827',width=1)
+        logo.create_arc(7,29,75,75,start=150,extent=190,style='arc',outline='#111827',width=1)
+        logo.create_oval(24,25,58,59,fill='white',outline='#111827',width=2)
 
         brand=tk.Frame(header,bg='#06183a')
         brand.pack(side='left',fill='y')
