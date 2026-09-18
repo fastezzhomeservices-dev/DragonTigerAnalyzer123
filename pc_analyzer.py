@@ -46,7 +46,6 @@ class App:
         self.summary = tk.StringVar(value='PAIR JQ | NO HISTORY')
         self.collect_date = tk.StringVar(value=datetime.now().strftime('%d/%m/%Y'))
         self.entries = tk.IntVar(value=50)
-        self.url = tk.StringVar(value='https://yolobet9.com/home')
         self.status = tk.StringVar(value='Ready')
         self.build_styles()
         self.build_ui()
@@ -85,11 +84,9 @@ class App:
         tk.Label(collector,text='Entries',bg='#111827',fg='white',font=('Segoe UI',10,'bold')).grid(row=0,column=2,padx=(14,4))
         ttk.Combobox(collector,textvariable=self.entries,values=[10,25,50,100],state='readonly',width=7).grid(row=0,column=3,padx=4)
         tk.Button(collector,text='PASTE RESULTS',command=self.paste_results,bg='#2563eb',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).grid(row=0,column=4,padx=6)
-        tk.Button(collector,text='FETCH PAGE',command=self.fetch_page,bg='#9333ea',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).grid(row=0,column=5,padx=6)
-        tk.Button(collector,text='FILTER DATE',command=self.filter_date,bg='#0f766e',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).grid(row=0,column=6,padx=6)
-        tk.Label(collector,text='URL',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).grid(row=1,column=0,padx=(12,4),pady=(2,9))
-        tk.Entry(collector,textvariable=self.url,bg='#1f2937',fg='white',insertbackground='white',width=75,relief='flat').grid(row=1,column=1,columnspan=6,sticky='ew',padx=4,pady=(2,9))
-        tk.Label(collector,textvariable=self.status,bg='#111827',fg='#86efac',font=('Segoe UI',9,'bold')).grid(row=0,column=7,padx=12)
+        tk.Button(collector,text='FILTER DATE',command=self.filter_date,bg='#0f766e',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).grid(row=0,column=5,padx=6)
+        tk.Label(collector,text='Date-wise paste/import only — no URL required',bg='#111827',fg='#86efac',font=('Segoe UI',9,'bold')).grid(row=1,column=0,columnspan=7,padx=12,pady=(2,9),sticky='w')
+        tk.Label(collector,textvariable=self.status,bg='#111827',fg='#86efac',font=('Segoe UI',9,'bold')).grid(row=0,column=6,padx=12)
 
         entry = tk.LabelFrame(self.root,text='  NEW ROUND  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         entry.pack(fill='x',padx=18,pady=6)
@@ -296,28 +293,6 @@ class App:
         added=self.merge_collected(incoming)
         self.status.set(f'Date {self.collect_date.get()} | detected {len(incoming)} | added {added} | duplicates skipped')
         messagebox.showinfo('YoloBet9 Import',f'Detected {len(incoming)} results. Added {added} new unique Round IDs. Duplicate Round IDs were skipped.')
-
-    def fetch_page(self):
-        try:
-            import urllib.request
-            req=urllib.request.Request(self.url.get(),headers={'User-Agent':'Mozilla/5.0'})
-            with urllib.request.urlopen(req,timeout=15) as resp: raw=resp.read().decode('utf-8','ignore')
-            rows=[]
-            for tr in re.findall(r'<tr[^>]*>(.*?)</tr>',raw,re.I|re.S):
-                cells=[html.unescape(re.sub('<[^>]+>',' ',c)).strip() for c in re.findall(r'<(?:td|th)[^>]*>(.*?)</(?:td|th)>',tr,re.I|re.S)]
-                if cells:
-                    rows.append('  '.join(cells))
-            incoming=self.parse_pasted_rows('\n'.join(rows))
-            if not incoming:
-                self.status.set('Page loaded, but no result rows found; site may render results with JavaScript.')
-                messagebox.showwarning('Fetch Page','The page loaded, but no result rows were readable. If results are rendered by JavaScript, use PASTE RESULTS after copying the Casino Results table.')
-                return
-            added=self.merge_collected(incoming)
-            self.status.set(f'Date {self.collect_date.get()} | detected {len(incoming)} | added {added}')
-            messagebox.showinfo('Fetch Page',f'Detected {len(incoming)} rows. Added {added} new unique Round IDs.')
-        except Exception as e:
-            self.status.set('Direct fetch unavailable; use PASTE RESULTS')
-            messagebox.showwarning('Fetch Page','Direct page fetch was not available. This can happen when the site requires browser JavaScript/login. Copy the date-wise Casino Results rows and use PASTE RESULTS.\n\nDetails: '+str(e))
 
     def filter_date(self):
         target=self.collect_date.get().strip()
