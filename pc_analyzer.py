@@ -334,8 +334,24 @@ class App:
                       activeforeground='white',font=('Segoe UI',9,'bold'),relief='groove',bd=1,
                       padx=8,pady=5).pack(side='left',padx=4)
 
+        # Scrollable dashboard area: header and navigation stay fixed; lower sections can scroll.
+        scroll_shell=tk.Frame(self.root,bg=BG)
+        scroll_shell.pack(fill='both',expand=True,padx=0,pady=0)
+        scroll_canvas=tk.Canvas(scroll_shell,bg=BG,highlightthickness=0)
+        scroll_bar=ttk.Scrollbar(scroll_shell,orient='vertical',command=scroll_canvas.yview)
+        scroll_canvas.configure(yscrollcommand=scroll_bar.set)
+        scroll_bar.pack(side='right',fill='y')
+        scroll_canvas.pack(side='left',fill='both',expand=True)
+        content=tk.Frame(scroll_canvas,bg=BG)
+        content_window=scroll_canvas.create_window((0,0),window=content,anchor='nw')
+        content.bind('<Configure>',lambda e: scroll_canvas.configure(scrollregion=scroll_canvas.bbox('all')))
+        scroll_canvas.bind('<Configure>',lambda e: scroll_canvas.itemconfigure(content_window,width=e.width))
+        def _wheel(event):
+            scroll_canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
+        scroll_canvas.bind_all('<MouseWheel>',_wheel)
+
         # Mandatory Pair Reference / Statistical Prediction row
-        refbar=tk.Frame(self.root,bg=PANEL,highlightthickness=1,highlightbackground=BORDER,height=58)
+        refbar=tk.Frame(content,bg=PANEL,highlightthickness=1,highlightbackground=BORDER,height=58)
         refbar.pack(fill='x',padx=12,pady=(1,2))
         refbar.pack_propagate(False)
         tk.Label(refbar,text='PAIR REFERENCE / STATISTICAL PREDICTION',bg=PANEL,fg=YELLOW,
