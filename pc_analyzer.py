@@ -6,6 +6,18 @@ import csv
 import re
 import html
 import os
+
+# Windows HD / High-DPI rendering: keep Tkinter text and controls sharp instead of bitmap-scaled.
+if os.name == 'nt':
+    try:
+        import ctypes
+        _user32 = ctypes.windll.user32
+        _user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))  # Per-monitor DPI aware V2
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
 import json
 import shutil
 import webbrowser
