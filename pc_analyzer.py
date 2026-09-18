@@ -822,10 +822,10 @@ class App:
                 wb=Workbook()
                 ws=wb.active; ws.title='PAIR SEARCH HISTORY'
                 ws.append(['TIME','PAIR','PREDICTION','RESULT SEQUENCE'])
-                for x in self.pair_history: ws.append([x.get('time',''),x.get('pair',''),x.get('prediction',''),' '.join(x.get('sequence',[]))])
+                for x in reversed(self.pair_history): ws.append([x.get('time',''),x.get('pair',''),x.get('prediction',''),' '.join(x.get('sequence',[]))])
                 ws2=wb.create_sheet('PRODUCTION RESULTS')
                 ws2.append(['TIME','PAIR','PREDICTION','CAME?','D','T','FINAL RESULT'])
-                for x in self.result_history: ws2.append([x.get('time',''),x.get('pair',''),x.get('prediction',''),x.get('came',''),x.get('dragon',''),x.get('tiger',''),x.get('final','')])
+                for x in reversed(self.result_history): ws2.append([x.get('time',''),x.get('pair',''),x.get('prediction',''),x.get('came',''),x.get('dragon',''),x.get('tiger',''),x.get('final','')])
                 wb.save(path)
             messagebox.showinfo('Download History','History downloaded successfully.')
         except Exception as e:
