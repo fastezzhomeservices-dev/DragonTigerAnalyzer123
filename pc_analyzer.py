@@ -274,19 +274,19 @@ class App:
         header.pack_propagate(False)
 
         # FASTEZZ SERVICES logo mark: five overlapping circular elements.
-        logo = tk.Canvas(header,width=96,height=82,bg='#06183a',highlightthickness=0)
-        logo.pack(side='left',padx=(10,2),pady=3)
-        logo.create_oval(32,2,64,34,fill='#f20aa8',outline='')
-        logo.create_oval(8,32,40,64,fill='#28d89b',outline='')
-        logo.create_oval(56,32,88,64,fill='#ffbd18',outline='')
-        logo.create_oval(33,51,65,83,fill='#2bb8ff',outline='')
-        logo.create_oval(29,29,67,67,fill='white',outline='#06183a',width=3)
+        logo = tk.Canvas(header,width=82,height=76,bg='#06183a',highlightthickness=0)
+        logo.pack(side='left',padx=(6,1),pady=3)
+        logo.create_oval(27,2,55,30,fill='#f20aa8',outline='')
+        logo.create_oval(7,29,35,57,fill='#28d89b',outline='')
+        logo.create_oval(47,29,75,57,fill='#ffbd18',outline='')
+        logo.create_oval(27,47,55,75,fill='#2bb8ff',outline='')
+        logo.create_oval(24,25,58,59,fill='white',outline='#06183a',width=3)
 
         brand=tk.Frame(header,bg='#06183a')
         brand.pack(side='left',fill='y')
-        tk.Label(brand,text='FASTEZZ',bg='#06183a',fg='white',font=('Segoe UI',28,'bold')).pack(anchor='w',pady=(4,0))
+        tk.Label(brand,text='FASTEZZ',bg='#06183a',fg='white',font=('Segoe UI',23,'bold')).pack(anchor='w',pady=(4,0))
         tk.Label(brand,text='SERVICES',bg='#06183a',fg='#ffe000',font=('Segoe UI',28,'bold')).pack(anchor='w',pady=(0,0))
-        sep=tk.Frame(header,bg='white',width=2); sep.pack(side='left',fill='y',pady=14,padx=18)
+        sep=tk.Frame(header,bg='white',width=2); sep.pack(side='left',fill='y',pady=14,padx=8)
         contact=tk.Frame(header,bg='#06183a'); contact.pack(side='left',fill='y',pady=8)
         wa_icon=tk.Canvas(contact,width=48,height=48,bg='#06183a',highlightthickness=0)
         wa_icon.pack(side='left',padx=(0,8),pady=(3,0))
@@ -294,17 +294,17 @@ class App:
         wa_icon.create_text(24,24,text='☎',fill='white',font=('Segoe UI',22,'bold'))
         wa_text=tk.Frame(contact,bg='#06183a')
         wa_text.pack(side='left',fill='y')
-        tk.Label(wa_text,text='WhatsApp Business',bg='#06183a',fg='#25D366',font=('Segoe UI',15,'bold')).pack(anchor='w',pady=(2,0))
-        tk.Label(wa_text,text='Chat Now',bg='#06183a',fg='white',font=('Segoe UI',9,'bold')).pack(anchor='w')
+        tk.Label(wa_text,text='WhatsApp Business',bg='#06183a',fg='#25D366',font=('Segoe UI',12,'bold')).pack(anchor='w',pady=(2,0))
+        tk.Label(wa_text,text='Chat Now',bg='#06183a',fg='white',font=('Segoe UI',8,'bold')).pack(anchor='w')
         tk.Label(contact,text='https://wa.me/91XXXXXXXXXX',bg='#06183a',fg='#25D366',
-                 font=('Segoe UI',11,'bold')).pack(side='left',padx=(12,0),pady=(24,0))
+                 font=('Segoe UI',8,'bold')).pack(side='left',padx=(6,0),pady=(22,0))
         tk.Button(contact,text='CONTACT US',command=self.open_contact_us,bg='#06183a',fg=YELLOW,
                   activebackground='#0b72ff',activeforeground='white',font=('Segoe UI',12,'bold'),
                   relief='groove',bd=1,padx=16,pady=4).pack(anchor='w',pady=(4,0))
 
         ver=tk.Label(header,text='PC ANALYZER v2.0  |  Developed by  SK SINGH',bg='#06183a',fg=YELLOW,font=('Segoe UI',12,'bold'),
                      relief='groove',bd=1,padx=10,pady=5)
-        ver.pack(side='right',padx=20)
+        ver.pack(side='right',padx=6)
 
         # Navigation
         nav=tk.Frame(self.root,bg=BG); nav.pack(fill='x',padx=18,pady=(4,3))
