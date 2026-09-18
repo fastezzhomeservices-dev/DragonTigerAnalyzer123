@@ -301,7 +301,8 @@ class App:
         nav_buttons=[
             ('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),
             ('LIVE DRAGON TIGER',self.open_live_browser),('THEME / BACKGROUND',self.open_theme_settings),
-            ('PAIR HISTORY',self.show_pair_history),('RESULT HISTORY',self.show_result_history),
+            ('PAIR SEARCH',self.open_pair_search),('PAIR HISTORY',self.show_pair_history),
+            ('RESULT HISTORY',self.show_result_history),
             ('PRODUCTION RESULT ENTRY',self.open_production_entry),
             ('DOWNLOAD HISTORY',self.download_history)
         ]
@@ -387,6 +388,27 @@ class App:
         self.refresh_prediction_dashboard()
         self._render_production_table()
 
+    def open_pair_search(self):
+        win=tk.Toplevel(self.root)
+        win.title('Pair Search')
+        win.geometry('430x220')
+        win.resizable(False,False)
+        t=self._theme()
+        win.configure(bg=t['root'])
+        tk.Label(win,text='PAIR SEARCH',bg=t['root'],fg=t['accent'],font=('Segoe UI',14,'bold')).pack(pady=(15,12))
+        row=tk.Frame(win,bg=t['root']); row.pack(pady=5)
+        tk.Label(row,text='Dragon',bg=t['root'],fg=t['text'],font=('Segoe UI',10,'bold')).pack(side='left',padx=(0,5))
+        dvar=tk.StringVar(value='A')
+        ttk.Combobox(row,textvariable=dvar,values=CARDS,state='readonly',width=5).pack(side='left')
+        tk.Label(row,text='Tiger',bg=t['root'],fg=t['text'],font=('Segoe UI',10,'bold')).pack(side='left',padx=(15,5))
+        tvar=tk.StringVar(value='A')
+        ttk.Combobox(row,textvariable=tvar,values=CARDS,state='readonly',width=5).pack(side='left')
+        def run_search():
+            self.pair.set(dvar.get()+tvar.get())
+            self.analyze()
+            win.destroy()
+        tk.Button(win,text='SEARCH / ANALYZE',command=run_search,bg='#0758d9',fg='white',
+                  font=('Segoe UI',10,'bold'),relief='groove',bd=1,padx=16,pady=7).pack(pady=18)
     def open_production_entry(self):
         win=tk.Toplevel(self.root)
         win.title('Production Result Entry')
