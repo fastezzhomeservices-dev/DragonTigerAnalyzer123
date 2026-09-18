@@ -727,6 +727,15 @@ class App:
                 q=self.data[j]; nxt.append(f'{q.get("result","")} {q.get("dragon","")}{q.get("tiger","")}')
             while len(nxt)<6: nxt.append('-')
             self.report_tree.insert('', 'end', values=(r.get('sno',''),' | '.join(prev) if prev else '-',f'{r.get("result","")} {p}',nxt[0],nxt[1],nxt[2],nxt[3],nxt[4],nxt[5]),tags=(self.tag_for(r.get('result','D')),))
+    def _circle(self, parent, result, size=40):
+        result=normalize_result(result) or 'TIE'
+        color=RESULT_COLORS.get(result,'#7c3aed')
+        cv=tk.Canvas(parent,width=size,height=size,bg=parent.cget('bg'),highlightthickness=0,cursor='hand2')
+        pad=2
+        cv.create_oval(pad,pad,size-pad,size-pad,fill=color,outline='')
+        cv.create_text(size/2,size/2,text=result,fill='white',font=('Segoe UI',max(8,int(size*0.25)),'bold'))
+        return cv
+
     def _show_pair_result_popup(self, item):
         pair=str(item.get('pair','')).strip().upper().replace(' ','')
         pred=normalize_result(item.get('prediction','')) or 'TIE'
