@@ -696,20 +696,23 @@ class App:
         if not items:
             tk.Label(self.pair_history_frame,text='PAIR SEARCH HISTORY WILL APPEAR HERE',bg='#111827',fg='#9ca3af',font=('Segoe UI',9,'bold')).pack(pady=25)
             return
+
+        # Show exactly the latest 15 searches as one continuous compact row.
+        # No large card/pair/sequence gaps: each result occupies one fixed slot.
+        strip=tk.Frame(self.pair_history_frame,bg='#111827')
+        strip.pack(side='left',fill='x',expand=True)
         for item in items:
-            card=tk.Frame(self.pair_history_frame,bg='#111827',width=150,height=65)
-            card.pack(side='left',padx=3); card.pack_propagate(False)
-            tk.Label(card,text=item.get('pair','-'),bg='#111827',fg='white',font=('Segoe UI',8,'bold')).pack()
-            row=tk.Frame(card,bg='#111827'); row.pack()
-            pred=item.get('prediction','')
-            if pred:
-                self._circle(row,pred,38).pack(side='left',padx=1)
-            else:
-                self._circle(row,'TIE',38).pack(side='left',padx=1)
-            seq=item.get('sequence',[])
-            tk.Label(row,text=' '.join(seq[-8:]) if seq else 'NO DATA',bg='#111827',fg='#d1d5db',font=('Segoe UI',7,'bold')).pack(side='left',padx=3)
-        # Keep a compact status for more than 15 stored searches.
-        tk.Label(self.pair_history_frame,text=f'Total saved searches: {len(self.pair_history)}',bg='#111827',fg='#9ca3af',font=('Segoe UI',8)).pack(side='right',padx=8,pady=25)
+            slot=tk.Frame(strip,bg='#111827',width=62,height=58)
+            slot.pack(side='left',fill='y',padx=0)
+            slot.pack_propagate(False)
+            pred=normalize_result(item.get('prediction',''))
+            if not pred:
+                pred='TIE'
+            self._circle(slot,pred,48).pack(anchor='center',pady=2)
+
+        tk.Label(self.pair_history_frame,text=f'Total History: {len(self.pair_history)}',
+                 bg='#111827',fg='#ffe600',font=('Segoe UI',9,'bold'),
+                 relief='groove',bd=1,padx=10,pady=5).pack(side='right',padx=(6,2),pady=9)
 
     def save_production_result(self):
         prediction=normalize_result(self.current_prediction.get())
