@@ -479,7 +479,7 @@ class App:
         recent.pack(side='right',fill='both',expand=True,padx=(18,8))
         tk.Label(recent,text='RECENT PREDICTION HISTORY (LATEST 10)',bg=bg,fg=white,font=('Segoe UI',10,'bold')).pack(anchor='w',padx=12,pady=(7,2))
         circles=tk.Frame(recent,bg=bg); circles.pack(fill='x',pady=3)
-        items=self.result_history[-10:]
+        items=list(reversed(self.result_history[-10:]))
         if not items:
             tk.Label(circles,text='No prediction history yet',bg=bg,fg='#94a3b8',font=('Segoe UI',10,'bold')).pack(pady=16)
         for item in items:
@@ -503,7 +503,7 @@ class App:
             return
         for x in self.production_tree.get_children():
             self.production_tree.delete(x)
-        items=self.result_history[-8:]
+        items=list(reversed(self.result_history[-8:]))
         for i,item in enumerate(items,1):
             final=normalize_result(item.get('final',''))
             came=str(item.get('came','')).upper()=='YES'
@@ -592,11 +592,13 @@ class App:
     def refresh(self, rows=None):
         rows = self.data if rows is None else rows
         for x in self.tree.get_children(): self.tree.delete(x)
-        for i,r in enumerate(rows):
-            prev = rows[i-1].get('result','') if i else ''
+        # Always display the latest/end result on the LEFT (newest first).
+        for idx in range(len(rows)-1,-1,-1):
+            r=rows[idx]
+            prev = rows[idx-1].get('result','') if idx > 0 else ''
             self.tree.insert('', 'end', values=(r.get('sno',''),r.get('round_id',''),r.get('time',''),r.get('dragon',''),r.get('tiger',''),r.get('result',''),r.get('dragon','')+r.get('tiger',''),self.oe(r.get('dragon','')),self.oe(r.get('tiger','')),prev),tags=(self.tag_for(r.get('result','D')),))
         for x in self.last_frame.winfo_children(): x.destroy()
-        recent = self.data[-14:]
+        recent = list(reversed(self.data[-14:]))
         for r in recent:
             res=r.get('result','')
             card=f'{r.get("dragon","")}/{r.get("tiger","")}'
@@ -692,7 +694,7 @@ class App:
     def render_pair_history(self):
         if not hasattr(self,'pair_history_frame'): return
         for w in self.pair_history_frame.winfo_children(): w.destroy()
-        items=self.pair_history[-15:]
+        items=list(reversed(self.pair_history[-15:]))
         if not items:
             tk.Label(self.pair_history_frame,text='PAIR SEARCH HISTORY WILL APPEAR HERE',bg='#111827',fg='#9ca3af',font=('Segoe UI',9,'bold')).pack(pady=25)
             return
@@ -907,7 +909,7 @@ class App:
         if not path:return
         try:
             rows=[['S NO','ROUND ID','TIME','DRAGON','TIGER','RESULT','PAIR','DRAGON O/E','TIGER O/E','DATE']]
-            for r in self.data: rows.append([r.get('sno',''),r.get('round_id',''),r.get('time',''),r.get('dragon',''),r.get('tiger',''),r.get('result',''),r.get('dragon','')+r.get('tiger',''),self.oe(r.get('dragon','')),self.oe(r.get('tiger','')),r.get('date','')])
+            for r in reversed(self.data): rows.append([r.get('sno',''),r.get('round_id',''),r.get('time',''),r.get('dragon',''),r.get('tiger',''),r.get('result',''),r.get('dragon','')+r.get('tiger',''),self.oe(r.get('dragon','')),self.oe(r.get('tiger','')),r.get('date','')])
             if path.lower().endswith('.csv'):
                 with open(path,'w',newline='',encoding='utf-8-sig') as f: csv.writer(f).writerows(rows)
             else:
