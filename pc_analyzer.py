@@ -248,11 +248,19 @@ class App:
         chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         chart_box.pack(fill='x',padx=18,pady=6)
         self.chart_frame=tk.Frame(chart_box,bg='#111827',height=150); self.chart_frame.pack(fill='x',padx=10,pady=8)
-        round_box=tk.LabelFrame(self.root,text='  ROUND ANALYSIS GRAPH  ',bg='#111827',fg='#60a5fa',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        round_box.pack(fill='x',padx=18,pady=6)
-        self.round_chart=tk.Canvas(round_box,height=180,bg='#111827',highlightthickness=0); self.round_chart.pack(fill='x',padx=10,pady=8)
+        # Occurrence report is kept; Round Analysis Graph is removed.
         report = tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         report.pack(fill='x',padx=18,pady=6)
+        report_table = tk.Frame(report,bg='#111827'); report_table.pack(fill='x',padx=8,pady=6)
+        rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
+        self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=7)
+        rwidths={'OCCURRENCE':90,'PREVIOUS 3':250,'MATCH':90,'NEXT 1':90,'NEXT 2':90,'NEXT 3':90,'NEXT 4':90,'NEXT 5':90,'NEXT 6':90}
+        for c in rcols:
+            self.report_tree.heading(c,text=c); self.report_tree.column(c,width=rwidths[c],anchor='center')
+        self.report_tree.pack(side='left',fill='both',expand=True)
+        ry=ttk.Scrollbar(report_table,orient='vertical',command=self.report_tree.yview)
+        ry.pack(side='right',fill='y')
+        self.report_tree.configure(yscrollcommand=ry.set)
         report_table = tk.Frame(report,bg='#111827'); report_table.pack(fill='x',padx=8,pady=6)
         rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
         self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=6)
@@ -349,12 +357,12 @@ class App:
         for x in self.report_tree.get_children(): self.report_tree.delete(x)
         if not rows:
             self.summary.set(f'PAIR {p} | NO HISTORY')
-            self.draw_round_graph()
+
             return
         maxres=max(RESULTS,key=lambda x:cnt[x]); pct=cnt[maxres]/len(rows)*100
         self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MOST {maxres} ({pct:.1f}%)')
         self.draw_frequency_chart(rows)
-        self.draw_round_graph()
+
         for idx,r in enumerate(self.data):
             if r.get('dragon','')+r.get('tiger','') != p: continue
             prev=[]
