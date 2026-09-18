@@ -73,7 +73,7 @@ class App:
         tk.Label(header,text='PC ANALYZER',bg='#7f1d1d',fg='#fde68a',font=('Segoe UI',15,'bold')).pack(side='right',padx=20)
 
         tools = tk.Frame(self.root,bg='#111827'); tools.pack(fill='x',padx=18,pady=(11,4))
-        for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),('Add Result',self.add_result),('Clear All',self.clear_all)]:
+        for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),('Clear All',self.clear_all)]:
             tk.Button(tools,text=text,command=cmd,bg='#374151',fg='white',activebackground='#4b5563',activeforeground='white',font=('Segoe UI',10,'bold'),relief='flat',padx=11,pady=7).pack(side='left',padx=4)
         tk.Label(tools,text='Historical statistical reference only',bg='#111827',fg='#9ca3af',font=('Segoe UI',9)).pack(side='right',padx=10)
 
@@ -87,13 +87,6 @@ class App:
         tk.Button(collector,text='FILTER DATE',command=self.filter_date,bg='#0f766e',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).grid(row=0,column=5,padx=6)
         tk.Label(collector,text='Date-wise paste/import only — no URL required',bg='#111827',fg='#86efac',font=('Segoe UI',9,'bold')).grid(row=1,column=0,columnspan=7,padx=12,pady=(2,9),sticky='w')
         tk.Label(collector,textvariable=self.status,bg='#111827',fg='#86efac',font=('Segoe UI',9,'bold')).grid(row=0,column=6,padx=12)
-
-        entry = tk.LabelFrame(self.root,text='  NEW ROUND  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        entry.pack(fill='x',padx=18,pady=6)
-        for i,(lab,var,vals) in enumerate([('Dragon',self.dr,CARDS),('Tiger',self.ti,CARDS),('Result',self.re,RESULTS)]):
-            tk.Label(entry,text=lab,bg='#111827',fg='#e5e7eb',font=('Segoe UI',10,'bold')).grid(row=0,column=i*2,padx=(12,5),pady=10)
-            ttk.Combobox(entry,textvariable=var,values=vals,state='readonly',width=9).grid(row=0,column=i*2+1,padx=5,pady=10)
-        tk.Button(entry,text='ADD ROUND',command=self.add_result,bg='#16a34a',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=18,pady=7).grid(row=0,column=7,padx=20)
 
         pair = tk.LabelFrame(self.root,text='  PAIR REFERENCE / STATISTICAL PREDICTION  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         pair.pack(fill='x',padx=18,pady=6)
