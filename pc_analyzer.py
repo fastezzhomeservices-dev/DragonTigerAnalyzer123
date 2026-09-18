@@ -289,7 +289,7 @@ class App:
         brand=tk.Frame(header,bg='#06183a')
         brand.pack(side='left',fill='y')
         tk.Label(brand,text='FASTEZZ',bg='#06183a',fg='white',font=('Segoe UI',34,'bold')).pack(anchor='w',pady=(9,0))
-        tk.Label(brand,text='SERVICES',bg='#06183a',fg='#ffe000',font=('Segoe UI',34,'bold')).pack(anchor='w',pady=(-8,0))
+        tk.Label(brand,text='SERVICES',bg='#06183a',fg='#ffe000',font=('Segoe UI',34,'bold')).pack(anchor='w',pady=(0,0))
         sep=tk.Frame(header,bg='white',width=2); sep.pack(side='left',fill='y',pady=14,padx=18)
         contact=tk.Frame(header,bg='#06183a'); contact.pack(side='left',fill='y',pady=8)
         wa_icon=tk.Canvas(contact,width=48,height=48,bg='#06183a',highlightthickness=0)
