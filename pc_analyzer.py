@@ -82,7 +82,9 @@ class App:
     def setup_background(self):
         self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
         self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_canvas.lower()
+        # Canvas.lower() is overridden by Tkinter Canvas item API and requires a tag/id.
+        # Lower the widget itself using the Tcl widget stacking command.
+        self.root.tk.call('lower', self.bg_canvas._w)
         self.root.bind('<Configure>', self._resize_background)
         self.apply_theme(self.theme_name, save=False)
 
