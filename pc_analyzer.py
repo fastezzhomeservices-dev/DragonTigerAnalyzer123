@@ -265,31 +265,27 @@ class App:
         RED = '#ff2028'
 
         self.root.configure(bg=BG)
-        self.root.geometry('1366x820')
-        self.root.minsize(1100,700)
-        try:
-            self.root.state('zoomed')
-        except Exception:
-            pass
+        self.root.geometry('1180x680')
+        self.root.minsize(1050,640)
 
         # Header
-        header = tk.Frame(self.root,bg='#06183a',height=108,highlightthickness=1,highlightbackground='#0b72ff')
+        header = tk.Frame(self.root,bg='#06183a',height=88,highlightthickness=1,highlightbackground='#0b72ff')
         header.pack(fill='x')
         header.pack_propagate(False)
 
         # FASTEZZ SERVICES logo mark: five overlapping circular elements.
-        logo = tk.Canvas(header,width=112,height=100,bg='#06183a',highlightthickness=0)
-        logo.pack(side='left',padx=(16,2),pady=4)
-        logo.create_oval(38,4,74,40,fill='#f20aa8',outline='')
-        logo.create_oval(10,39,46,75,fill='#28d89b',outline='')
-        logo.create_oval(66,39,102,75,fill='#ffbd18',outline='')
-        logo.create_oval(39,61,75,97,fill='#2bb8ff',outline='')
-        logo.create_oval(35,35,77,77,fill='white',outline='#06183a',width=3)
+        logo = tk.Canvas(header,width=96,height=82,bg='#06183a',highlightthickness=0)
+        logo.pack(side='left',padx=(10,2),pady=3)
+        logo.create_oval(32,2,64,34,fill='#f20aa8',outline='')
+        logo.create_oval(8,32,40,64,fill='#28d89b',outline='')
+        logo.create_oval(56,32,88,64,fill='#ffbd18',outline='')
+        logo.create_oval(33,51,65,83,fill='#2bb8ff',outline='')
+        logo.create_oval(29,29,67,67,fill='white',outline='#06183a',width=3)
 
         brand=tk.Frame(header,bg='#06183a')
         brand.pack(side='left',fill='y')
-        tk.Label(brand,text='FASTEZZ',bg='#06183a',fg='white',font=('Segoe UI',34,'bold')).pack(anchor='w',pady=(9,0))
-        tk.Label(brand,text='SERVICES',bg='#06183a',fg='#ffe000',font=('Segoe UI',34,'bold')).pack(anchor='w',pady=(0,0))
+        tk.Label(brand,text='FASTEZZ',bg='#06183a',fg='white',font=('Segoe UI',28,'bold')).pack(anchor='w',pady=(4,0))
+        tk.Label(brand,text='SERVICES',bg='#06183a',fg='#ffe000',font=('Segoe UI',28,'bold')).pack(anchor='w',pady=(0,0))
         sep=tk.Frame(header,bg='white',width=2); sep.pack(side='left',fill='y',pady=14,padx=18)
         contact=tk.Frame(header,bg='#06183a'); contact.pack(side='left',fill='y',pady=8)
         wa_icon=tk.Canvas(contact,width=48,height=48,bg='#06183a',highlightthickness=0)
@@ -298,16 +294,16 @@ class App:
         wa_icon.create_text(24,24,text='☎',fill='white',font=('Segoe UI',22,'bold'))
         wa_text=tk.Frame(contact,bg='#06183a')
         wa_text.pack(side='left',fill='y')
-        tk.Label(wa_text,text='WhatsApp Business',bg='#06183a',fg='#25D366',font=('Segoe UI',18,'bold')).pack(anchor='w',pady=(3,0))
-        tk.Label(wa_text,text='Chat Now',bg='#06183a',fg='white',font=('Segoe UI',11,'bold')).pack(anchor='w')
+        tk.Label(wa_text,text='WhatsApp Business',bg='#06183a',fg='#25D366',font=('Segoe UI',15,'bold')).pack(anchor='w',pady=(2,0))
+        tk.Label(wa_text,text='Chat Now',bg='#06183a',fg='white',font=('Segoe UI',9,'bold')).pack(anchor='w')
         tk.Label(contact,text='https://wa.me/91XXXXXXXXXX',bg='#06183a',fg='#25D366',
                  font=('Segoe UI',11,'bold')).pack(side='left',padx=(12,0),pady=(24,0))
         tk.Button(contact,text='CONTACT US',command=self.open_contact_us,bg='#06183a',fg=YELLOW,
                   activebackground='#0b72ff',activeforeground='white',font=('Segoe UI',12,'bold'),
                   relief='groove',bd=1,padx=16,pady=4).pack(anchor='w',pady=(4,0))
 
-        ver=tk.Label(header,text='PC ANALYZER v2.0  |  Developed by  SK SINGH',bg='#06183a',fg=YELLOW,font=('Segoe UI',17,'bold'),
-                     relief='groove',bd=1,padx=18,pady=8)
+        ver=tk.Label(header,text='PC ANALYZER v2.0  |  Developed by  SK SINGH',bg='#06183a',fg=YELLOW,font=('Segoe UI',12,'bold'),
+                     relief='groove',bd=1,padx=10,pady=5)
         ver.pack(side='right',padx=20)
 
         # Navigation
@@ -322,13 +318,13 @@ class App:
         ]
         for text,cmd in nav_buttons:
             tk.Button(nav,text=text,command=cmd,bg='#0758d9',fg='white',activebackground='#0b78ff',
-                      activeforeground='white',font=('Segoe UI',10,'bold'),relief='groove',bd=1,
-                      padx=13,pady=7).pack(side='left',padx=4)
+                      activeforeground='white',font=('Segoe UI',9,'bold'),relief='groove',bd=1,
+                      padx=8,pady=5).pack(side='left',padx=4)
 
         # Pair search history
         ph=tk.LabelFrame(self.root,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
                          font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        ph.pack(fill='x',padx=18,pady=3)
+        ph.pack(fill='x',padx=12,pady=2)
         # Main Pair Search controls are part of the approved reference layout.
         search_row=tk.Frame(ph,bg=PANEL,height=70)
         search_row.pack(fill='x',padx=8,pady=(3,0))
@@ -371,7 +367,7 @@ class App:
         # Frequency chart
         chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg=PANEL,fg=YELLOW,
                                 font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        chart_box.pack(fill='x',padx=18,pady=3)
+        chart_box.pack(fill='x',padx=12,pady=2)
         self.chart_frame=tk.Frame(chart_box,bg=PANEL,height=52)
         self.chart_frame.pack(fill='x',padx=10,pady=3)
         self.chart_frame.pack_propagate(False)
@@ -379,7 +375,7 @@ class App:
         # Occurrence report
         report=tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg=PANEL,fg=YELLOW,
                              font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        report.pack(fill='x',padx=18,pady=3)
+        report.pack(fill='x',padx=12,pady=2)
         report_table=tk.Frame(report,bg=PANEL,height=112)
         report_table.pack(fill='x',padx=8,pady=3)
         report_table.pack_propagate(False)
@@ -399,7 +395,7 @@ class App:
         # Production result entry table
         prod=tk.LabelFrame(self.root,text='  PRODUCTION RESULT ENTRY  ',bg=PANEL,fg=YELLOW,
                            font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        prod.pack(fill='x',padx=18,pady=3)
+        prod.pack(fill='x',padx=12,pady=2)
         prod_table=tk.Frame(prod,bg=PANEL,height=68)
         prod_table.pack(fill='x',padx=8,pady=3)
         prod_table.pack_propagate(False)
@@ -417,7 +413,7 @@ class App:
         # Bottom prediction history summary
         dash=tk.LabelFrame(self.root,text='  PREDICTION HISTORY  ',bg=PANEL,fg=YELLOW,
                            font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        dash.pack(fill='x',padx=18,pady=(3,7),ipady=2)
+        dash.pack(fill='x',padx=12,pady=(2,4),ipady=1)
         self.prediction_dashboard=tk.Frame(dash,bg=PANEL)
         self.prediction_dashboard.pack(fill='x',padx=8,pady=2)
 
