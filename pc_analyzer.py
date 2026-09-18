@@ -812,9 +812,9 @@ class App:
         try:
             if path.lower().endswith('.csv'):
                 rows=[['TYPE','TIME','PAIR','PREDICTION','CAME?','D','T','FINAL','RESULT SEQUENCE']]
-                for x in self.pair_history:
+                for x in reversed(self.pair_history):
                     rows.append(['PAIR SEARCH',x.get('time',''),x.get('pair',''),x.get('prediction',''),'','','','', ' '.join(x.get('sequence',[]))])
-                for x in self.result_history:
+                for x in reversed(self.result_history):
                     rows.append(['PRODUCTION RESULT',x.get('time',''),x.get('pair',''),x.get('prediction',''),x.get('came',''),x.get('dragon',''),x.get('tiger',''),x.get('final',''),''])
                 with open(path,'w',newline='',encoding='utf-8-sig') as f: csv.writer(f).writerows(rows)
             else:
