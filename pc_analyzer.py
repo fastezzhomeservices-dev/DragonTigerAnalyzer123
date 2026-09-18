@@ -292,7 +292,7 @@ class App:
                   activebackground='#0b72ff',activeforeground='white',font=('Segoe UI',12,'bold'),
                   relief='groove',bd=1,padx=16,pady=4).pack(anchor='w',pady=(4,0))
 
-        ver=tk.Label(header,text='PC ANALYZER v2.0',bg='#06183a',fg=YELLOW,font=('Segoe UI',17,'bold'),
+        ver=tk.Label(header,text='PC ANALYZER v2.0  |  DEVELOPER BY S K SINGH',bg='#06183a',fg=YELLOW,font=('Segoe UI',17,'bold'),
                      relief='groove',bd=1,padx=18,pady=8)
         ver.pack(side='right',padx=20)
 
