@@ -9,7 +9,7 @@ import html
 CARDS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
 ODD = {'A','3','5','7','9','J','K'}
 RESULTS = ['D','T','TIE']
-RESULT_COLORS = {'D':'#21c55d','T':'#f59e0b','TIE':'#8b5cf6'}
+RESULT_COLORS = {'D':'#16a34a','T':'#ea580c','TIE':'#7c3aed'}
 
 
 def clean_card(v):
@@ -73,7 +73,7 @@ class App:
         tk.Label(header,text='PC ANALYZER',bg='#7f1d1d',fg='#fde68a',font=('Segoe UI',15,'bold')).pack(side='right',padx=20)
 
         tools = tk.Frame(self.root,bg='#111827'); tools.pack(fill='x',padx=18,pady=(11,4))
-        for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),('Clear All',self.clear_all)]:
+        for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data)]:
             tk.Button(tools,text=text,command=cmd,bg='#374151',fg='white',activebackground='#4b5563',activeforeground='white',font=('Segoe UI',10,'bold'),relief='flat',padx=11,pady=7).pack(side='left',padx=4)
         tk.Label(tools,text='Historical statistical reference only',bg='#111827',fg='#9ca3af',font=('Segoe UI',9)).pack(side='right',padx=10)
 
@@ -99,13 +99,7 @@ class App:
             self.report_tree.heading(c,text=c); self.report_tree.column(c,width=rwidths[c],anchor='center')
         self.report_tree.pack(fill='x',expand=True)
 
-        last = tk.LabelFrame(self.root,text='  LAST RESULT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        last.pack(fill='x',padx=18,pady=6)
-        self.last_frame = tk.Frame(last,bg='#111827'); self.last_frame.pack(fill='x',padx=10,pady=7)
-        self.last_analysis = tk.StringVar(value='LAST RESULT ANALYSIS | Add/import rounds to see previous history, card numbers and next historical rounds')
-        tk.Label(last,textvariable=self.last_analysis,bg='#111827',fg='#fde68a',font=('Segoe UI',10,'bold'),anchor='w').pack(fill='x',padx=10,pady=(0,6))
-
-        table = tk.Frame(self.root,bg='#111827'); table.pack(fill='both',expand=True,padx=18,pady=(4,12))
+        table = tk.Frame(self.root,bg='#111827'); table.pack(fill='both',expand=True,padx=18,pady=(4,8))
         cols=('S NO','ROUND ID','TIME','DRAGON','TIGER','RESULT','PAIR','D O/E','T O/E','PREV RESULT')
         self.tree=ttk.Treeview(table,columns=cols,show='headings')
         widths={'S NO':60,'ROUND ID':155,'TIME':135,'DRAGON':75,'TIGER':75,'RESULT':75,'PAIR':75,'D O/E':85,'T O/E':85,'PREV RESULT':105}
@@ -117,6 +111,15 @@ class App:
         self.report_tree.tag_configure('tie',background='#4c1d95',foreground='white')
         self.tree.pack(side='left',fill='both',expand=True)
         y=ttk.Scrollbar(table,orient='vertical',command=self.tree.yview); y.pack(side='right',fill='y'); self.tree.configure(yscrollcommand=y.set)
+
+        # LAST RESULT stays fixed at the very bottom.
+        last = tk.LabelFrame(self.root,text='  LAST RESULT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
+        last.pack(fill='x',padx=18,pady=(0,8))
+        self.last_frame = tk.Frame(last,bg='#111827',height=82)
+        self.last_frame.pack(fill='x',padx=10,pady=6)
+        self.last_frame.pack_propagate(False)
+        self.last_analysis = tk.StringVar(value='LAST RESULT ANALYSIS | Import rounds to see previous history, card numbers and next historical rounds')
+        tk.Label(last,textvariable=self.last_analysis,bg='#111827',fg='#fde68a',font=('Segoe UI',9,'bold'),anchor='w').pack(fill='x',padx=10,pady=(0,5))
 
     def oe(self,c): return 'ODD' if c in ODD else 'EVEN'
     def tag_for(self,r): return {'D':'dragon','T':'tiger','TIE':'tie'}[r]
@@ -141,9 +144,11 @@ class App:
         for r in recent:
             res=r.get('result','')
             card=f'{r.get("dragon","")}/{r.get("tiger","")}'
-            box=tk.Frame(self.last_frame,bg=RESULT_COLORS.get(res,'#374151'),bd=1,relief='ridge')
-            tk.Label(box,text=res,bg=RESULT_COLORS.get(res,'#374151'),fg='white',font=('Segoe UI',11,'bold'),width=4).pack(padx=3,pady=(2,0))
-            tk.Label(box,text=card,bg=RESULT_COLORS.get(res,'#374151'),fg='white',font=('Segoe UI',8,'bold')).pack(padx=3,pady=(0,2))
+            color=RESULT_COLORS.get(res,'#374151')
+            box=tk.Canvas(self.last_frame,width=58,height=78,bg='#111827',highlightthickness=0)
+            box.create_oval(5,3,53,51,fill=color,outline='')
+            box.create_text(29,27,text=res,fill='white',font=('Segoe UI',11,'bold'))
+            box.create_text(29,64,text=card,fill='white',font=('Segoe UI',8,'bold'))
             box.pack(side='right',padx=2)
         self.update_last_analysis()
         self.update_title_counts()
