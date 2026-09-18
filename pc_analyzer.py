@@ -381,7 +381,7 @@ class App:
         ref_combo.bind('<<ComboboxSelected>>',run_reference_search)
 
         # Pair search history
-        ph=tk.LabelFrame(self.root,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
+        ph=tk.LabelFrame(content,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
                          font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         ph.pack(fill='x',padx=12,pady=2)
         # Main Pair Search controls are part of the approved reference layout.
@@ -424,7 +424,7 @@ class App:
         self.render_pair_history()
 
         # Frequency chart
-        chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg=PANEL,fg=YELLOW,
+        chart_box=tk.LabelFrame(content,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg=PANEL,fg=YELLOW,
                                 font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         chart_box.pack(fill='x',padx=12,pady=2)
         self.chart_frame=tk.Frame(chart_box,bg=PANEL,height=28)
@@ -432,7 +432,7 @@ class App:
         self.chart_frame.pack_propagate(False)
 
         # Occurrence report
-        report=tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg=PANEL,fg=YELLOW,
+        report=tk.LabelFrame(content,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg=PANEL,fg=YELLOW,
                              font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         report.pack(fill='x',padx=12,pady=2)
         report_table=tk.Frame(report,bg=PANEL,height=112)
@@ -452,7 +452,7 @@ class App:
             self.report_tree.tag_configure(tag,background=color,foreground='white')
 
         # Production result entry table
-        prod=tk.LabelFrame(self.root,text='  PRODUCTION RESULT ENTRY  ',bg=PANEL,fg=YELLOW,
+        prod=tk.LabelFrame(content,text='  PRODUCTION RESULT ENTRY  ',bg=PANEL,fg=YELLOW,
                            font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         prod.pack(fill='x',padx=12,pady=2)
         prod_table=tk.Frame(prod,bg=PANEL,height=68)
@@ -470,7 +470,7 @@ class App:
         self.production_tree.tag_configure('nomatch',background='#e00012',foreground='white')
 
         # Bottom prediction history summary
-        dash=tk.LabelFrame(self.root,text='  PREDICTION HISTORY  ',bg=PANEL,fg=YELLOW,
+        dash=tk.LabelFrame(content,text='  PREDICTION HISTORY  ',bg=PANEL,fg=YELLOW,
                            font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         dash.pack(fill='x',padx=12,pady=(2,4),ipady=1)
         self.prediction_dashboard=tk.Frame(dash,bg=PANEL)
