@@ -322,6 +322,35 @@ class App:
                       activeforeground='white',font=('Segoe UI',9,'bold'),relief='groove',bd=1,
                       padx=8,pady=5).pack(side='left',padx=4)
 
+        # Mandatory Pair Reference / Statistical Prediction row
+        refbar=tk.Frame(self.root,bg=PANEL,highlightthickness=1,highlightbackground=BORDER,height=58)
+        refbar.pack(fill='x',padx=12,pady=(1,2))
+        refbar.pack_propagate(False)
+        tk.Label(refbar,text='PAIR REFERENCE / STATISTICAL PREDICTION',bg=PANEL,fg=YELLOW,
+                 font=('Segoe UI',10,'bold')).pack(side='left',padx=(10,14))
+        tk.Label(refbar,text='Pair',bg=PANEL,fg=WHITE,font=('Segoe UI',9,'bold')).pack(side='left',padx=(0,6))
+        pair_values_ref=[a+b for a in CARDS for b in CARDS]
+        self.reference_pair_var=tk.StringVar(value=self.pair.get() or 'JQ')
+        ref_combo=ttk.Combobox(refbar,textvariable=self.reference_pair_var,values=pair_values_ref,
+                               state='readonly',width=9,font=('Segoe UI',9,'bold'))
+        ref_combo.pack(side='left',ipady=3)
+        def run_reference_search(event=None):
+            p=self.reference_pair_var.get().strip().upper().replace(' ','')
+            if p in pair_values_ref:
+                self.pair.set(p)
+                self.analyze()
+                self.main_pair_var.set(p) if hasattr(self,'main_pair_var') else None
+                self.refresh_prediction_dashboard()
+        tk.Button(refbar,text='ANALYZE',command=run_reference_search,bg='#e55b19',fg='white',
+                  activebackground='#f06b22',activeforeground='white',font=('Segoe UI',9,'bold'),
+                  relief='groove',bd=1,padx=18,pady=5).pack(side='left',padx=(8,14))
+        tk.Label(refbar,textvariable=self.summary,bg=PANEL,fg=YELLOW,font=('Segoe UI',9,'bold'),
+                 anchor='w').pack(side='left',fill='x',expand=True)
+        tk.Label(refbar,text='Prediction:',bg=PANEL,fg=WHITE,font=('Segoe UI',9,'bold')).pack(side='left',padx=(8,5))
+        tk.Label(refbar,textvariable=self.current_prediction,bg=PANEL,fg=YELLOW,font=('Segoe UI',11,'bold'),
+                 width=5).pack(side='left',padx=(0,10))
+        ref_combo.bind('<<ComboboxSelected>>',run_reference_search)
+
         # Pair search history
         ph=tk.LabelFrame(self.root,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
                          font=('Segoe UI',12,'bold'),bd=1,relief='groove')
