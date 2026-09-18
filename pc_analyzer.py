@@ -411,7 +411,7 @@ class App:
         report_table.pack(fill='x',padx=8,pady=3)
         report_table.pack_propagate(False)
 
-        rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
+        rcols=('ROUND ID','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
         rwidths=[90,250,90,90,90,90,90,90,90]
         self.report_rows=[]
 
