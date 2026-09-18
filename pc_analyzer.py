@@ -83,6 +83,9 @@ class App:
         ttk.Combobox(pair,textvariable=self.pair,values=[a+b for a in CARDS for b in CARDS],width=12).pack(side='left',padx=5)
         tk.Button(pair,text='ANALYZE',command=self.analyze,bg='#b91c1c',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=14,pady=6).pack(side='left',padx=6)
         tk.Label(pair,textvariable=self.summary,bg='#111827',fg='#fde68a',font=('Segoe UI',10,'bold')).pack(side='left',padx=20)
+        chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
+        chart_box.pack(fill='x',padx=18,pady=6)
+        self.chart_frame=tk.Frame(chart_box,bg='#111827',height=150); self.chart_frame.pack(fill='x',padx=10,pady=8)
         report = tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         report.pack(fill='x',padx=18,pady=6)
         report_table = tk.Frame(report,bg='#111827'); report_table.pack(fill='x',padx=8,pady=6)
@@ -179,6 +182,7 @@ class App:
             return
         maxres=max(RESULTS,key=lambda x:cnt[x]); pct=cnt[maxres]/len(rows)*100
         self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MOST {maxres} ({pct:.1f}%)')
+        self.draw_frequency_chart(rows)
         for idx,r in enumerate(self.data):
             if r.get('dragon','')+r.get('tiger','') != p: continue
             prev=[]
@@ -189,6 +193,27 @@ class App:
                 q=self.data[j]; nxt.append(f'{q.get("result","")} {q.get("dragon","")}{q.get("tiger","")}')
             while len(nxt)<6: nxt.append('-')
             self.report_tree.insert('', 'end', values=(r.get('sno',''),' | '.join(prev) if prev else '-',f'{r.get("result","")} {p}',nxt[0],nxt[1],nxt[2],nxt[3],nxt[4],nxt[5]),tags=(self.tag_for(r.get('result','D')),))
+
+    def draw_frequency_chart(self, rows):
+        for w in self.chart_frame.winfo_children(): w.destroy()
+        if not rows:
+            tk.Label(self.chart_frame,text='No matching pair history',bg='#111827',fg='#9ca3af').pack(pady=25)
+            return
+        counts=Counter()
+        for r in rows:
+            d,t=r.get('dragon',''),r.get('tiger','')
+            if d: counts[(d,'D')]+=1
+            if t: counts[(t,'T')]+=1
+        top=sorted(counts.items(),key=lambda x:(-x[1],x[0][0],x[0][1]))[:13]
+        maxv=max(v for _,v in top) or 1
+        for (num,side),v in top:
+            row=tk.Frame(self.chart_frame,bg='#111827'); row.pack(fill='x',pady=2)
+            tk.Label(row,text=f'{num}  {side}',bg='#14532d' if side=='D' else '#92400e',fg='white',width=7,font=('Segoe UI',9,'bold')).pack(side='left')
+            bar=tk.Canvas(row,height=20,bg='#1f2937',highlightthickness=0); bar.pack(side='left',fill='x',expand=True,padx=6)
+            bar.update_idletasks()
+            w=max(30,int(bar.winfo_width()*v/maxv))
+            bar.create_rectangle(0,2,w,18,fill='#22c55e' if side=='D' else '#f59e0b',outline='')
+            tk.Label(row,text=f'{v} times',bg='#111827',fg='white',width=10,anchor='e',font=('Segoe UI',9,'bold')).pack(side='right')
 
     def import_data(self):
         path=filedialog.askopenfilename(filetypes=[('Excel','*.xlsx'),('CSV','*.csv'),('All files','*.*')])
