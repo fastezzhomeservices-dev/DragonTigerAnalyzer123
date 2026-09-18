@@ -297,8 +297,20 @@ class App:
         tk.Label(last,textvariable=self.last_analysis,bg='#111827',fg='#fde68a',font=('Segoe UI',9,'bold'),anchor='w').pack(fill='x',padx=10,pady=(0,5))
 
     def open_live_browser(self):
-        """Open a live Dragon Tiger webpage in a real Edge/WebView window positioned beside the analyzer."""
-        url = self.live_url
+        """Ask for a live-game URL, then open it in the Edge/WebView window."""
+        url = simpledialog.askstring(
+            'LIVE DRAGON TIGER',
+            'Enter live game URL:',
+            initialvalue=self.live_url,
+            parent=self.root
+        )
+        if not url:
+            return
+        url = url.strip()
+        if not url.lower().startswith(('http://', 'https://')):
+            messagebox.showerror('Invalid URL', 'Please enter a valid http:// or https:// URL.')
+            return
+        self.live_url = url
         if self.live_open:
             self.status.set('LIVE DRAGON TIGER browser is already open.')
             return
