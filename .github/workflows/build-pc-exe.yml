@@ -2,32 +2,44 @@ name: Build PC EXE + Installer
 on:
   workflow_dispatch:
   push:
-    paths:
-      - 'pc_analyzer.py'
-      - 'installer.iss'
-      - '.github/workflows/build-pc-exe.yml'
+    branches:
+      - main
+
 concurrency:
   group: pc-build-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install pyinstaller openpyxl pillow pywebview
-      - run: pyinstaller --onefile --windowed --name DragonTigerAnalyzerPC pc_analyzer.py
+
+      - name: Verify PC source syntax
+        run: python -m py_compile pc_analyzer.py
+
+      - name: Install build dependencies
+        run: pip install pyinstaller openpyxl pillow pywebview
+
+      - name: Build PC EXE
+        run: pyinstaller --onefile --windowed --name DragonTigerAnalyzerPC pc_analyzer.py
+
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
+
       - name: Build Windows Installer
         run: iscc installer.iss
+
       - uses: actions/upload-artifact@v4
         with:
           name: DragonTigerAnalyzer-PC-Installer-FINAL
           path: installer/DragonTigerAnalyzerPC-v2.0-FINAL-Setup.exe
           if-no-files-found: error
+
       - uses: actions/upload-artifact@v4
         with:
           name: DragonTigerAnalyzer-PC-EXE-FINAL
