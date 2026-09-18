@@ -247,63 +247,87 @@ class App:
         s.configure('Treeview.Heading', background='#7f1d1d', foreground='white', font=('Segoe UI',9,'bold'), padding=7)
 
     def build_ui(self):
-        header = tk.Frame(self.root, bg='#7f1d1d', height=68)
+        # FINAL PC LAYOUT — matches the approved FASTEZZ SERVICES reference.
+        BG = '#061326'
+        PANEL = '#071a35'
+        BLUE = '#0758d9'
+        BORDER = '#00a8ff'
+        YELLOW = '#ffe600'
+        WHITE = '#f8fafc'
+        GREEN = '#00e676'
+        RED = '#ff2028'
+
+        self.root.configure(bg=BG)
+        self.root.geometry('1600x900')
+        self.root.minsize(1200,760)
+
+        # Header
+        header = tk.Frame(self.root,bg='#06183a',height=108,highlightthickness=1,highlightbackground='#0b72ff')
         header.pack(fill='x')
-        for text, bg, width in [('DRAGON','#991b1b',14),('TIE','#312e81',9),('TIGER','#111827',14),('PAIR','#991b1b',14)]:
-            tk.Label(header,text=text,bg=bg,fg='white',font=('Segoe UI',16,'bold'),width=width,pady=10).pack(side='left',padx=4,pady=9)
-        tk.Label(header,text='PC ANALYZER v2.0',bg='#7f1d1d',fg='#fde68a',font=('Segoe UI',15,'bold')).pack(side='right',padx=20)
+        header.pack_propagate(False)
 
-        tools = tk.Frame(self.root,bg='#111827'); tools.pack(fill='x',padx=18,pady=(11,4))
-        for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),('LIVE DRAGON TIGER',self.open_live_browser),('THEME / BACKGROUND',self.open_theme_settings)]:
-            tk.Button(tools,text=text,command=cmd,bg='#374151',fg='white',activebackground='#4b5563',activeforeground='white',font=('Segoe UI',10,'bold'),relief='flat',padx=11,pady=7).pack(side='left',padx=4)
-        tk.Label(tools,text='Historical statistical reference only',bg='#111827',fg='#9ca3af',font=('Segoe UI',9)).pack(side='right',padx=10)
+        logo = tk.Canvas(header,width=135,height=100,bg='#06183a',highlightthickness=0)
+        logo.pack(side='left',padx=(20,4),pady=4)
+        logo.create_oval(48,8,86,46,fill='#f20aa8',outline='')
+        logo.create_oval(20,42,58,80,fill='#28d89b',outline='')
+        logo.create_oval(76,42,114,80,fill='#ffbd18',outline='')
+        logo.create_oval(45,35,89,79,fill='white',outline='#06183a',width=3)
 
-        pair = tk.LabelFrame(self.root,text='  PAIR REFERENCE / STATISTICAL PREDICTION  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        pair.pack(fill='x',padx=18,pady=6)
-        tk.Label(pair,text='Pair',bg='#111827',fg='white',font=('Segoe UI',10,'bold')).pack(side='left',padx=(12,5),pady=10)
-        ttk.Combobox(pair,textvariable=self.pair,values=[a+b for a in CARDS for b in CARDS],width=12).pack(side='left',padx=5)
-        tk.Button(pair,text='ANALYZE',command=self.analyze,bg='#b91c1c',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=14,pady=6).pack(side='left',padx=6)
-        tk.Label(pair,textvariable=self.summary,bg='#111827',fg='#fde68a',font=('Segoe UI',10,'bold')).pack(side='left',padx=20)
-        tk.Button(pair,text='PAIR HISTORY',command=self.show_pair_history,bg='#374151',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=10,pady=6).pack(side='right',padx=5)
-        tk.Button(pair,text='RESULT HISTORY',command=self.show_result_history,bg='#374151',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=10,pady=6).pack(side='right',padx=5)
-        tk.Label(pair,text='Prediction:',bg='#111827',fg='#cbd5e1',font=('Segoe UI',9,'bold')).pack(side='left',padx=(12,3))
-        self.prediction_label=tk.Label(pair,textvariable=self.current_prediction,bg='#111827',fg='#fde68a',font=('Segoe UI',11,'bold'))
-        self.prediction_label.pack(side='left',padx=4)
-        # Pair search history: latest 15+ searches, rendered as round D/T/TIE markers.
-        ph=tk.LabelFrame(self.root,text='  PAIR SEARCH HISTORY — LATEST 15+  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        ph.pack(fill='x',padx=18,pady=4)
-        self.pair_history_frame=tk.Frame(ph,bg='#111827',height=78)
-        self.pair_history_frame.pack(fill='x',padx=8,pady=5)
+        brand=tk.Frame(header,bg='#06183a')
+        brand.pack(side='left',fill='y')
+        tk.Label(brand,text='FASTEZZ',bg='#06183a',fg='white',font=('Segoe UI',42,'bold')).pack(anchor='w',pady=(6,0))
+        tk.Label(brand,text='SERVICES',bg='#06183a',fg='#ffe000',font=('Segoe UI',42,'bold')).place(x=365,y=6)
+        tk.Label(brand,text='Your Complete Home Service Solution',bg='#06183a',fg='white',font=('Segoe UI',14,'bold')).pack(anchor='w',padx=2,pady=(0,4))
+
+        sep=tk.Frame(header,bg='white',width=2); sep.pack(side='left',fill='y',pady=14,padx=24)
+        contact=tk.Frame(header,bg='#06183a'); contact.pack(side='left',fill='y',pady=10)
+        tk.Label(contact,text='◉  www.fastezz.com',bg='#06183a',fg='white',font=('Segoe UI',17,'bold')).pack(anchor='w',pady=(7,2))
+        tk.Label(contact,text='✉  Contact@fastezz.com',bg='#06183a',fg='white',font=('Segoe UI',17,'bold')).pack(anchor='w',pady=2)
+
+        ver=tk.Label(header,text='PC ANALYZER v2.0',bg='#06183a',fg=YELLOW,font=('Segoe UI',17,'bold'),
+                     relief='groove',bd=1,padx=18,pady=8)
+        ver.pack(side='right',padx=20)
+
+        # Navigation
+        nav=tk.Frame(self.root,bg=BG); nav.pack(fill='x',padx=18,pady=(8,5))
+        nav_buttons=[
+            ('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),
+            ('LIVE DRAGON TIGER',self.open_live_browser),('THEME / BACKGROUND',self.open_theme_settings),
+            ('PAIR HISTORY',self.show_pair_history),('RESULT HISTORY',self.show_result_history),
+            ('PRODUCTION RESULT ENTRY',self.open_production_entry),
+            ('DOWNLOAD HISTORY',self.download_history)
+        ]
+        for text,cmd in nav_buttons:
+            tk.Button(nav,text=text,command=cmd,bg='#0758d9',fg='white',activebackground='#0b78ff',
+                      activeforeground='white',font=('Segoe UI',10,'bold'),relief='groove',bd=1,
+                      padx=13,pady=7).pack(side='left',padx=4)
+
+        # Pair search history
+        ph=tk.LabelFrame(self.root,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
+                         font=('Segoe UI',12,'bold'),bd=1,relief='groove')
+        ph.pack(fill='x',padx=18,pady=3)
+        self.pair_history_frame=tk.Frame(ph,bg=PANEL,height=72)
+        self.pair_history_frame.pack(fill='x',padx=8,pady=3)
         self.pair_history_frame.pack_propagate(False)
         self.render_pair_history()
 
-        # Production/result entry: save the displayed prediction together with the manually verified outcome.
-        entry=tk.LabelFrame(self.root,text='  PRODUCTION RESULT ENTRY  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        entry.pack(fill='x',padx=18,pady=4)
-        tk.Label(entry,text='Prediction',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(10,3),pady=7)
-        tk.Label(entry,textvariable=self.current_prediction,bg='#111827',fg='#fde68a',font=('Segoe UI',10,'bold')).pack(side='left',padx=4)
-        tk.Label(entry,text='Came?',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(14,3))
-        ttk.Combobox(entry,textvariable=self.prediction_correct,values=['YES','NO'],state='readonly',width=7).pack(side='left',padx=3)
-        tk.Label(entry,text='D:',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(12,2))
-        ttk.Combobox(entry,textvariable=self.actual_dragon,values=CARDS,state='readonly',width=5).pack(side='left')
-        tk.Label(entry,text='T:',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(8,2))
-        ttk.Combobox(entry,textvariable=self.actual_tiger,values=CARDS,state='readonly',width=5).pack(side='left')
-        tk.Label(entry,text='Final:',bg='#111827',fg='white',font=('Segoe UI',9,'bold')).pack(side='left',padx=(8,2))
-        ttk.Combobox(entry,textvariable=self.final_result,values=RESULTS,state='readonly',width=7).pack(side='left')
-        tk.Button(entry,text='SAVE RESULT',command=self.save_production_result,bg='#15803d',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=5).pack(side='left',padx=8)
-        tk.Button(entry,text='DOWNLOAD HISTORY',command=self.download_history,bg='#374151',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=5).pack(side='left',padx=4)
-        chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        chart_box.pack(fill='x',padx=18,pady=6)
-        self.chart_frame=tk.Frame(chart_box,bg='#111827',height=95); self.chart_frame.pack(fill='x',padx=10,pady=8)
-        # Occurrence report: one visible Treeview only.
-        report = tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        report.pack(fill='x',padx=18,pady=5)
-        report_table = tk.Frame(report,bg='#111827',height=190)
-        report_table.pack(fill='x',padx=8,pady=5)
-        report_table.pack_propagate(False)
+        # Frequency chart
+        chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg=PANEL,fg=YELLOW,
+                                font=('Segoe UI',12,'bold'),bd=1,relief='groove')
+        chart_box.pack(fill='x',padx=18,pady=3)
+        self.chart_frame=tk.Frame(chart_box,bg=PANEL,height=62)
+        self.chart_frame.pack(fill='x',padx=10,pady=3)
+        self.chart_frame.pack_propagate(False)
 
+        # Occurrence report
+        report=tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg=PANEL,fg=YELLOW,
+                             font=('Segoe UI',12,'bold'),bd=1,relief='groove')
+        report.pack(fill='x',padx=18,pady=3)
+        report_table=tk.Frame(report,bg=PANEL,height=145)
+        report_table.pack(fill='x',padx=8,pady=3)
+        report_table.pack_propagate(False)
         rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
-        self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=5)
+        self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=4)
         rwidths={'OCCURRENCE':90,'PREVIOUS 3':250,'MATCH':90,'NEXT 1':90,'NEXT 2':90,'NEXT 3':90,'NEXT 4':90,'NEXT 5':90,'NEXT 6':90}
         for col in rcols:
             self.report_tree.heading(col,text=col)
@@ -312,30 +336,155 @@ class App:
         ry=ttk.Scrollbar(report_table,orient='vertical',command=self.report_tree.yview)
         ry.pack(side='right',fill='y')
         self.report_tree.configure(yscrollcommand=ry.set)
+        for tag,color in [('dragon','#14532d'),('tiger','#92400e'),('tie','#4c1d95')]:
+            self.report_tree.tag_configure(tag,background=color,foreground='white')
 
-        table = tk.Frame(self.root,bg='#111827'); table.pack(fill='both',expand=True,padx=18,pady=(4,8))
-        cols=('S NO','ROUND ID','TIME','DRAGON','TIGER','RESULT','PAIR','D O/E','T O/E','PREV RESULT')
-        self.tree=ttk.Treeview(table,columns=cols,show='headings')
-        widths={'S NO':60,'ROUND ID':155,'TIME':135,'DRAGON':75,'TIGER':75,'RESULT':75,'PAIR':75,'D O/E':85,'T O/E':85,'PREV RESULT':105}
-        for c in cols:
-            self.tree.heading(c,text=c); self.tree.column(c,width=widths[c],anchor='center')
-        # Unique result colors: D=green, T=orange, TIE=purple.
-        for tag,color in [('dragon','#16a34a'),('tiger','#ea580c'),('tie','#7c3aed')]:
-            self.tree.tag_configure(tag,background=color,foreground='white')
-        self.report_tree.tag_configure('dragon',background='#14532d',foreground='white')
-        self.report_tree.tag_configure('tiger',background='#92400e',foreground='white')
-        self.report_tree.tag_configure('tie',background='#4c1d95',foreground='white')
-        self.tree.pack(side='left',fill='both',expand=True)
-        y=ttk.Scrollbar(table,orient='vertical',command=self.tree.yview); y.pack(side='right',fill='y'); self.tree.configure(yscrollcommand=y.set)
+        # Production result entry table
+        prod=tk.LabelFrame(self.root,text='  PRODUCTION RESULT ENTRY  ',bg=PANEL,fg=YELLOW,
+                           font=('Segoe UI',12,'bold'),bd=1,relief='groove')
+        prod.pack(fill='x',padx=18,pady=3)
+        prod_table=tk.Frame(prod,bg=PANEL,height=82)
+        prod_table.pack(fill='x',padx=8,pady=3)
+        prod_table.pack_propagate(False)
+        pcols=('S NO','ROUND ID','TIME','DRAGON','TIGER','TIE','PREDICTION','RESULT','PAIR','D Q/E','T Q/E','PREV RESULT')
+        self.production_tree=ttk.Treeview(prod_table,columns=pcols,show='headings',height=2)
+        pwidths={'S NO':60,'ROUND ID':145,'TIME':120,'DRAGON':75,'TIGER':75,'TIE':60,'PREDICTION':105,
+                 'RESULT':90,'PAIR':80,'D Q/E':90,'T Q/E':90,'PREV RESULT':110}
+        for c in pcols:
+            self.production_tree.heading(c,text=c)
+            self.production_tree.column(c,width=pwidths[c],anchor='center',stretch=True)
+        self.production_tree.pack(fill='both',expand=True)
+        self.production_tree.tag_configure('match',background='#078b3d',foreground='white')
+        self.production_tree.tag_configure('nomatch',background='#e00012',foreground='white')
 
-        # LAST RESULT stays fixed at the very bottom.
-        last = tk.LabelFrame(self.root,text='  LAST RESULT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        last.pack(fill='x',padx=18,pady=(0,8))
-        self.last_frame = tk.Frame(last,bg='#111827',height=82)
-        self.last_frame.pack(fill='x',padx=10,pady=6)
-        self.last_frame.pack_propagate(False)
-        self.last_analysis = tk.StringVar(value='LAST RESULT ANALYSIS | Import rounds to see previous history, card numbers and next historical rounds')
-        tk.Label(last,textvariable=self.last_analysis,bg='#111827',fg='#fde68a',font=('Segoe UI',9,'bold'),anchor='w').pack(fill='x',padx=10,pady=(0,5))
+        # Bottom prediction history summary
+        dash=tk.LabelFrame(self.root,text='  PREDICTION HISTORY  ',bg=PANEL,fg=YELLOW,
+                           font=('Segoe UI',12,'bold'),bd=1,relief='groove')
+        dash.pack(fill='both',expand=True,padx=18,pady=(3,7))
+        self.prediction_dashboard=tk.Frame(dash,bg=PANEL)
+        self.prediction_dashboard.pack(fill='both',expand=True,padx=8,pady=5)
+
+        # Hidden compatibility widgets used by existing analysis/export methods.
+        self.pair=tk.StringVar(value='JQ')
+        hidden=tk.Frame(self.root,bg=BG)
+        self.hidden_pair=hidden
+        pair_combo=ttk.Combobox(hidden,textvariable=self.pair,values=[a+b for a in CARDS for b in CARDS],width=12)
+        pair_combo.pack()
+        tk.Button(hidden,text='ANALYZE',command=self.analyze).pack()
+        self.prediction_label=tk.Label(hidden,textvariable=self.current_prediction)
+        self.summary=tk.StringVar(value='PAIR JQ | NO HISTORY')
+        self.tree=ttk.Treeview(hidden,columns=('S NO','ROUND ID','TIME','DRAGON','TIGER','RESULT','PAIR','D O/E','T O/E','PREV RESULT'),show='headings')
+        self.last_frame=tk.Frame(hidden)
+        self.last_analysis=tk.StringVar(value='')
+        self.refresh_prediction_dashboard()
+        self._render_production_table()
+
+    def open_production_entry(self):
+        win=tk.Toplevel(self.root)
+        win.title('Production Result Entry')
+        win.geometry('720x240')
+        win.configure(bg=self._theme()['root'])
+        t=self._theme()
+        tk.Label(win,text='PRODUCTION RESULT ENTRY',bg=t['root'],fg=t['accent'],font=('Segoe UI',14,'bold')).pack(pady=10)
+        row=tk.Frame(win,bg=t['root']); row.pack(fill='x',padx=20,pady=8)
+        tk.Label(row,text='Prediction',bg=t['root'],fg=t['text'],font=('Segoe UI',10,'bold')).pack(side='left')
+        tk.Label(row,textvariable=self.current_prediction,bg=t['root'],fg=t['accent'],font=('Segoe UI',11,'bold')).pack(side='left',padx=8)
+        tk.Label(row,text='Came?',bg=t['root'],fg=t['text'],font=('Segoe UI',10,'bold')).pack(side='left',padx=(20,4))
+        ttk.Combobox(row,textvariable=self.prediction_correct,values=['YES','NO'],state='readonly',width=8).pack(side='left')
+        tk.Label(row,text='D:',bg=t['root'],fg=t['text'],font=('Segoe UI',10,'bold')).pack(side='left',padx=(15,3))
+        ttk.Combobox(row,textvariable=self.actual_dragon,values=CARDS,state='readonly',width=5).pack(side='left')
+        tk.Label(row,text='T:',bg=t['root'],fg=t['text'],font=('Segoe UI',10,'bold')).pack(side='left',padx=(10,3))
+        ttk.Combobox(row,textvariable=self.actual_tiger,values=CARDS,state='readonly',width=5).pack(side='left')
+        tk.Label(row,text='Final:',bg=t['root'],fg=t['text'],font=('Segoe UI',10,'bold')).pack(side='left',padx=(10,3))
+        ttk.Combobox(row,textvariable=self.final_result,values=RESULTS,state='readonly',width=7).pack(side='left')
+        tk.Button(win,text='SAVE RESULT',command=lambda:(self.save_production_result(),win.destroy()),
+                  bg='#15803d',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=15,pady=7).pack(pady=12)
+        tk.Button(win,text='DOWNLOAD HISTORY',command=self.download_history,
+                  bg=t['button'],fg=t['text'],font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack()
+
+    def refresh_prediction_dashboard(self):
+        if not hasattr(self,'prediction_dashboard'):
+            return
+        for w in self.prediction_dashboard.winfo_children():
+            w.destroy()
+        bg='#071a35'; green='#00e676'; red='#ff2028'; white='#f8fafc'; yellow='#ffe600'
+        total=len(self.result_history)
+        matches=sum(1 for x in self.result_history if str(x.get('came','')).upper()=='YES')
+        nomatch=max(0,total-matches)
+        mp=(matches/total*100) if total else 0
+        np=(nomatch/total*100) if total else 0
+
+        left=tk.Frame(self.prediction_dashboard,bg=bg); left.pack(side='left',fill='both',expand=True)
+        tk.Label(left,text='✓',bg=green,fg='white',font=('Segoe UI',20,'bold'),width=2).pack(side='left',padx=(22,10),pady=10)
+        mbox=tk.Frame(left,bg=bg); mbox.pack(side='left',fill='y',padx=(0,25))
+        tk.Label(mbox,text='% MATCH',bg=bg,fg=white,font=('Segoe UI',11,'bold')).pack(anchor='w')
+        tk.Label(mbox,text=f'{mp:.0f}%',bg=bg,fg=green,font=('Segoe UI',26,'bold')).pack(anchor='w')
+        tk.Label(mbox,text=f'({matches} / {total})',bg=bg,fg=white,font=('Segoe UI',10,'bold')).pack(anchor='w')
+
+        sep=tk.Frame(self.prediction_dashboard,bg='#1e4f83',width=1); sep.pack(side='left',fill='y',pady=8)
+
+        mid=tk.Frame(self.prediction_dashboard,bg=bg); mid.pack(side='left',fill='both',expand=True)
+        tk.Label(mid,text='✕',bg=red,fg='white',font=('Segoe UI',20,'bold'),width=2).pack(side='left',padx=(25,10),pady=10)
+        nbox=tk.Frame(mid,bg=bg); nbox.pack(side='left',fill='y',padx=(0,25))
+        tk.Label(nbox,text='% NO MATCH',bg=bg,fg=white,font=('Segoe UI',11,'bold')).pack(anchor='w')
+        tk.Label(nbox,text=f'{np:.0f}%',bg=bg,fg=red,font=('Segoe UI',26,'bold')).pack(anchor='w')
+        tk.Label(nbox,text=f'({nomatch} / {total})',bg=bg,fg=white,font=('Segoe UI',10,'bold')).pack(anchor='w')
+
+        donut=tk.Canvas(self.prediction_dashboard,width=170,height=120,bg=bg,highlightthickness=0)
+        donut.pack(side='left',padx=10)
+        cx,cy=60,60; r=46
+        if total:
+            donut.create_arc(cx-r,cy-r,cx+r,cy+r,start=90,extent=-360*matches/total,fill=green,outline=bg,width=1)
+            donut.create_arc(cx-r,cy-r,cx+r,cy+r,start=90-360*matches/total,extent=-360*nomatch/total,fill=red,outline=bg,width=1)
+        else:
+            donut.create_oval(cx-r,cy-r,cx+r,cy+r,outline='#334155',width=18)
+        donut.create_text(cx,cy-6,text=str(total),fill=white,font=('Segoe UI',17,'bold'))
+        donut.create_text(cx,cy+15,text='Total\\nRounds',fill=white,font=('Segoe UI',8,'bold'))
+
+        legend=tk.Frame(self.prediction_dashboard,bg=bg); legend.pack(side='left',fill='y',padx=4)
+        tk.Label(legend,text=f'●  Match ({matches})     {mp:.0f}%',bg=bg,fg=green,font=('Segoe UI',10,'bold')).pack(anchor='w',pady=5)
+        tk.Label(legend,text=f'●  No Match ({nomatch})     {np:.0f}%',bg=bg,fg=red,font=('Segoe UI',10,'bold')).pack(anchor='w',pady=5)
+
+        recent=tk.Frame(self.prediction_dashboard,bg=bg,highlightthickness=1,highlightbackground='#0b72ff')
+        recent.pack(side='right',fill='both',expand=True,padx=(18,8))
+        tk.Label(recent,text='RECENT PREDICTION HISTORY (LATEST 10)',bg=bg,fg=white,font=('Segoe UI',10,'bold')).pack(anchor='w',padx=12,pady=(7,2))
+        circles=tk.Frame(recent,bg=bg); circles.pack(fill='x',pady=3)
+        items=self.result_history[-10:]
+        if not items:
+            tk.Label(circles,text='No prediction history yet',bg=bg,fg='#94a3b8',font=('Segoe UI',10,'bold')).pack(pady=16)
+        for item in items:
+            pred=normalize_result(item.get('prediction','')) or '-'
+            came=str(item.get('came','')).upper()=='YES'
+            col=green if pred=='D' else ('#ffd500' if pred=='T' else '#8b5cf6')
+            cv=tk.Canvas(circles,width=40,height=45,bg=bg,highlightthickness=0)
+            cv.create_oval(3,2,37,36,fill=col,outline='')
+            cv.create_text(20,19,text=pred,fill='white',font=('Segoe UI',9,'bold'))
+            cv.pack(side='left',padx=3)
+        status=tk.Frame(recent,bg=bg); status.pack(fill='x')
+        for item in items:
+            came=str(item.get('came','')).upper()=='YES'
+            cv=tk.Canvas(status,width=40,height=25,bg=bg,highlightthickness=0)
+            cv.create_oval(10,2,30,22,fill=green if came else red,outline='')
+            cv.create_text(20,12,text='✓' if came else '✕',fill='white',font=('Segoe UI',8,'bold'))
+            cv.pack(side='left',padx=3)
+
+    def _render_production_table(self):
+        if not hasattr(self,'production_tree'):
+            return
+        for x in self.production_tree.get_children():
+            self.production_tree.delete(x)
+        items=self.result_history[-8:]
+        for i,item in enumerate(items,1):
+            final=normalize_result(item.get('final',''))
+            came=str(item.get('came','')).upper()=='YES'
+            pred=normalize_result(item.get('prediction',''))
+            d=clean_card(item.get('dragon','')); t=clean_card(item.get('tiger',''))
+            tie='-' if final!='TIE' else 'TIE'
+            pair=item.get('pair','') or (d+t)
+            dq=self.oe(d) if d else '-'; tq=self.oe(t) if t else '-'
+            prev=item.get('prev_result','-')
+            vals=(i,item.get('round_id',''),item.get('round_time','') or item.get('time',''),d,t,tie,pred,final,pair,dq,tq,prev)
+            self.production_tree.insert('', 'end', values=vals, tags=('match' if came else 'nomatch',))
 
     def open_live_browser(self):
         """Ask for a live-game URL, then open it in the Edge/WebView window."""
@@ -428,6 +577,8 @@ class App:
             box.create_text(29,64,text=card,fill='white',font=('Segoe UI',8,'bold'))
             box.pack(side='right',padx=2)
         self.update_last_analysis()
+        self._render_production_table()
+        self.refresh_prediction_dashboard()
         self.update_title_counts()
 
     def update_last_analysis(self):
@@ -548,12 +699,16 @@ class App:
         if not final:
             messagebox.showwarning('Save Result','Select the final result.')
             return
+        latest=self.data[-1] if self.data else {}
         record={
             'time':datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
-            'pair':self.pair.get().upper().strip(),
+            'round_id':str(latest.get('round_id','')),
+            'round_time':str(latest.get('time','')),
+            'pair':self.pair.get().upper().strip() or (d+t),
             'prediction':prediction,
             'came':correct,
-            'dragon':d,'tiger':t,'final':final
+            'dragon':d,'tiger':t,'final':final,
+            'prev_result':str(self.data[-2].get('result','')) if len(self.data)>1 else '-'
         }
         self.result_history.append(record)
         self.result_history=self.result_history[-200:]
