@@ -86,6 +86,9 @@ class App:
         chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         chart_box.pack(fill='x',padx=18,pady=6)
         self.chart_frame=tk.Frame(chart_box,bg='#111827',height=150); self.chart_frame.pack(fill='x',padx=10,pady=8)
+        round_box=tk.LabelFrame(self.root,text='  ROUND ANALYSIS GRAPH  ',bg='#111827',fg='#60a5fa',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
+        round_box.pack(fill='x',padx=18,pady=6)
+        self.round_chart=tk.Canvas(round_box,height=180,bg='#111827',highlightthickness=0); self.round_chart.pack(fill='x',padx=10,pady=8)
         report = tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         report.pack(fill='x',padx=18,pady=6)
         report_table = tk.Frame(report,bg='#111827'); report_table.pack(fill='x',padx=8,pady=6)
@@ -179,10 +182,12 @@ class App:
         for x in self.report_tree.get_children(): self.report_tree.delete(x)
         if not rows:
             self.summary.set(f'PAIR {p} | NO HISTORY')
+            self.draw_round_graph()
             return
         maxres=max(RESULTS,key=lambda x:cnt[x]); pct=cnt[maxres]/len(rows)*100
         self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MOST {maxres} ({pct:.1f}%)')
         self.draw_frequency_chart(rows)
+        self.draw_round_graph()
         for idx,r in enumerate(self.data):
             if r.get('dragon','')+r.get('tiger','') != p: continue
             prev=[]
@@ -214,6 +219,36 @@ class App:
             w=max(30,int(bar.winfo_width()*v/maxv))
             bar.create_rectangle(0,2,w,18,fill='#22c55e' if side=='D' else '#f59e0b',outline='')
             tk.Label(row,text=f'{v} times',bg='#111827',fg='white',width=10,anchor='e',font=('Segoe UI',9,'bold')).pack(side='right')
+
+    def draw_round_graph(self):
+        cv=self.round_chart
+        cv.delete('all')
+        data=self.data[-40:]
+        if not data:
+            cv.create_text(20,80,anchor='w',text='Import data to view round analysis',fill='#9ca3af',font=('Segoe UI',10))
+            return
+        cv.update_idletasks()
+        W=max(cv.winfo_width(),700); H=180
+        left=45; right=20; top=18; bottom=38
+        usable=max(1,W-left-right)
+        step=usable/max(1,len(data))
+        barw=max(6,min(18,step*0.65))
+        cv.create_line(left,H-bottom,left+usable,H-bottom,fill='#4b5563')
+        for i,r in enumerate(data):
+            x=left+i*step+step/2
+            res=r.get('result','')
+            h={'D':85,'T':65,'TIE':45}.get(res,35)
+            color={'D':'#22c55e','T':'#f59e0b','TIE':'#a855f7'}.get(res,'#6b7280')
+            cv.create_rectangle(x-barw/2,H-bottom-h,x+barw/2,H-bottom,fill=color,outline='')
+            if len(data)<=20 or i%2==0:
+                cv.create_text(x,H-bottom-h-9,text=res,fill='white',font=('Segoe UI',8,'bold'))
+            label=str(r.get('sno',''))
+            if len(data)<=25 or i%4==0:
+                cv.create_text(x,H-bottom+12,text=label,fill='#9ca3af',font=('Segoe UI',8))
+            num=f"{r.get('dragon','')}/{r.get('tiger','')}"
+            if len(data)<=20 or i%3==0:
+                cv.create_text(x,H-bottom+27,text=num,fill='#d1d5db',font=('Segoe UI',7))
+        cv.create_text(left,8,anchor='w',text='Latest 40 rounds | bar = result | label = D/T card numbers',fill='#cbd5e1',font=('Segoe UI',9,'bold'))
 
     def import_data(self):
         path=filedialog.askopenfilename(filetypes=[('Excel','*.xlsx'),('CSV','*.csv'),('All files','*.*')])
