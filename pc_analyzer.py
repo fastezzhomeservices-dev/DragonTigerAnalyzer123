@@ -60,6 +60,7 @@ class App:
         self.pair_history = []
         self.result_history = []
         self.current_prediction = tk.StringVar(value='')
+        self.prediction_pct = tk.StringVar(value='')
         self.prediction_correct = tk.StringVar(value='')
         self.actual_dragon = tk.StringVar(value='')
         self.actual_tiger = tk.StringVar(value='')
@@ -377,7 +378,9 @@ class App:
                  anchor='w').pack(side='left',fill='x',expand=True)
         tk.Label(refbar,text='Prediction:',bg=PANEL,fg=WHITE,font=('Segoe UI',9,'bold')).pack(side='left',padx=(8,5))
         tk.Label(refbar,textvariable=self.current_prediction,bg=PANEL,fg=YELLOW,font=('Segoe UI',11,'bold'),
-                 width=5).pack(side='left',padx=(0,10))
+                 width=5).pack(side='left',padx=(0,2))
+        tk.Label(refbar,textvariable=self.prediction_pct,bg=PANEL,fg=YELLOW,font=('Segoe UI',9,'bold'),
+                 width=8).pack(side='left',padx=(0,8))
         ref_combo.bind('<<ComboboxSelected>>',run_reference_search)
 
         # Pair search history — pair selector is kept only in the mandatory reference row above.
@@ -747,6 +750,7 @@ class App:
             self.render_report_rows()
             self.summary.set(f'PAIR {p} | NO HISTORY')
             self.current_prediction.set('NO PREDICTION')
+            self.prediction_pct.set('')
             if self.pair_history:
                 self.pair_history[-1]['prediction']=''
                 self.render_pair_history(); self.save_settings()
@@ -754,6 +758,7 @@ class App:
         maxres=max(RESULTS,key=lambda x:cnt[x]); pct=cnt[maxres]/len(rows)*100
         self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MOST {maxres} ({pct:.1f}%)')
         self.current_prediction.set(maxres)
+        self.prediction_pct.set(f'{pct:.1f}%')
         if self.pair_history:
             self.pair_history[-1]['prediction']=maxres
             self.render_pair_history(); self.save_settings()
