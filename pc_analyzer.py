@@ -790,16 +790,64 @@ class App:
         if value=='-':
             cv.create_text(x+width/2,y+height/2,text='-',fill='white',font=('Segoe UI',8,'bold'))
             return
-
         parts=[p.strip() for p in value.split('|')]
         cursor=x+6
         for n,part in enumerate(parts):
-            m=re.match(r'^(D|T|TIE)\\s*(.*)        result=normalize_result(result) or 'TIE'
+            m=re.match(r'^(D|T|TIE)\\s*(.*)$',part,re.I)
+            if m:
+                result=normalize_result(m.group(1))
+                rest=m.group(2).strip()
+                cursor=self._report_circle(cv,cursor,y+(height-20)/2,result,20)+5
+                if rest:
+                    cv.create_text(cursor,y+height/2,text=rest,anchor='w',
+                                   fill='white',font=('Segoe UI',8,'bold'))
+                    cursor += max(22,len(rest)*5.3)
+            else:
+                cv.create_text(cursor,y+height/2,text=part,anchor='w',
+                               fill='white',font=('Segoe UI',8,'bold'))
+                cursor += max(20,len(part)*5.3)
+            if n < len(parts)-1:
+                cv.create_text(cursor,y+height/2,text='|',anchor='w',
+                               fill='#cbd5e1',font=('Segoe UI',8,'bold'))
+                cursor += 10
+
+    def render_report_rows(self):
+        if not hasattr(self,'report_canvas'):
+            return
+        cv=self.report_canvas
+        cv.delete('all')
+        if not getattr(self,'report_rows',None):
+            cv.configure(scrollregion=(0,0,max(1,cv.winfo_width()),1))
+            return
+        base=[90,250,90,90,90,90,90,90,90]
+        total=sum(base)
+        W=max(total,cv.winfo_width())
+        scale=W/total
+        widths=[w*scale for w in base]
+        row_h=38
+        for ridx,row in enumerate(self.report_rows):
+            y=ridx*row_h
+            res=normalize_result(str(row[2]).split()[0])
+            row_bg={'D':'#14532d','T':'#92400e','TIE':'#4c1d95'}.get(res,'#12304f')
+            cv.create_rectangle(0,y,W,y+row_h,fill=row_bg,outline='#0b4f72')
+            x=0
+            for cidx,(val,w) in enumerate(zip(row,widths)):
+                if cidx==0:
+                    cv.create_text(x+w/2,y+row_h/2,text=str(val),fill='white',
+                                   font=('Segoe UI',8,'bold'))
+                else:
+                    self._draw_report_cell(cv,x,y,w,row_h,val)
+                x+=w
+        cv.configure(scrollregion=(0,0,W,len(self.report_rows)*row_h))
+
+    def _circle(self, parent, result, size=40):
+        result=normalize_result(result) or 'TIE'
         color=RESULT_COLORS.get(result,'#7c3aed')
         cv=tk.Canvas(parent,width=size,height=size,bg=parent.cget('bg'),highlightthickness=0,cursor='hand2')
         pad=2
         cv.create_oval(pad,pad,size-pad,size-pad,fill=color,outline='')
-        cv.create_text(size/2,size/2,text=result,fill='white',font=('Segoe UI',max(8,int(size*0.25)),'bold'))
+        cv.create_text(size/2,size/2,text=result,fill='white',
+                       font=('Segoe UI',max(8,int(size*0.25)),'bold'))
         return cv
 
     def _show_pair_result_popup(self, item):
