@@ -253,27 +253,24 @@ class App:
         tk.Label(pair,textvariable=self.summary,bg='#111827',fg='#fde68a',font=('Segoe UI',10,'bold')).pack(side='left',padx=20)
         chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         chart_box.pack(fill='x',padx=18,pady=6)
-        self.chart_frame=tk.Frame(chart_box,bg='#111827',height=150); self.chart_frame.pack(fill='x',padx=10,pady=8)
-        # Occurrence report is kept; Round Analysis Graph is removed.
+        self.chart_frame=tk.Frame(chart_box,bg='#111827',height=95); self.chart_frame.pack(fill='x',padx=10,pady=8)
+        # Occurrence report: one visible Treeview only.
         report = tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        report.pack(fill='x',padx=18,pady=6)
-        report_table = tk.Frame(report,bg='#111827'); report_table.pack(fill='x',padx=8,pady=6)
+        report.pack(fill='x',padx=18,pady=5)
+        report_table = tk.Frame(report,bg='#111827',height=190)
+        report_table.pack(fill='x',padx=8,pady=5)
+        report_table.pack_propagate(False)
+
         rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
-        self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=7)
+        self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=5)
         rwidths={'OCCURRENCE':90,'PREVIOUS 3':250,'MATCH':90,'NEXT 1':90,'NEXT 2':90,'NEXT 3':90,'NEXT 4':90,'NEXT 5':90,'NEXT 6':90}
-        for c in rcols:
-            self.report_tree.heading(c,text=c); self.report_tree.column(c,width=rwidths[c],anchor='center')
+        for col in rcols:
+            self.report_tree.heading(col,text=col)
+            self.report_tree.column(col,width=rwidths[col],anchor='center',stretch=True)
         self.report_tree.pack(side='left',fill='both',expand=True)
         ry=ttk.Scrollbar(report_table,orient='vertical',command=self.report_tree.yview)
         ry.pack(side='right',fill='y')
         self.report_tree.configure(yscrollcommand=ry.set)
-        report_table = tk.Frame(report,bg='#111827'); report_table.pack(fill='x',padx=8,pady=6)
-        rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
-        self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=6)
-        rwidths={'OCCURRENCE':90,'PREVIOUS 3':250,'MATCH':90,'NEXT 1':90,'NEXT 2':90,'NEXT 3':90,'NEXT 4':90,'NEXT 5':90,'NEXT 6':90}
-        for c in rcols:
-            self.report_tree.heading(c,text=c); self.report_tree.column(c,width=rwidths[c],anchor='center')
-        self.report_tree.pack(fill='x',expand=True)
 
         table = tk.Frame(self.root,bg='#111827'); table.pack(fill='both',expand=True,padx=18,pady=(4,8))
         cols=('S NO','ROUND ID','TIME','DRAGON','TIGER','RESULT','PAIR','D O/E','T O/E','PREV RESULT')
