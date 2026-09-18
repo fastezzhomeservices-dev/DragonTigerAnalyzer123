@@ -265,8 +265,12 @@ class App:
         RED = '#ff2028'
 
         self.root.configure(bg=BG)
-        self.root.geometry('1600x900')
-        self.root.minsize(1200,760)
+        self.root.geometry('1280x760')
+        self.root.minsize(1100,700)
+        try:
+            self.root.state('zoomed')
+        except Exception:
+            pass
 
         # Header
         header = tk.Frame(self.root,bg='#06183a',height=108,highlightthickness=1,highlightbackground='#0b72ff')
@@ -335,23 +339,24 @@ class App:
                  font=('Segoe UI',10,'bold')).pack(anchor='w',pady=(7,4))
         search_controls=tk.Frame(left_search,bg=PANEL)
         search_controls.pack(anchor='w')
+        pair_values=[a+b for a in CARDS for b in CARDS]
         self.main_pair_var=tk.StringVar(value=self.pair.get() or 'Q6')
-        pair_entry=tk.Entry(search_controls,textvariable=self.main_pair_var,width=18,
-                            bg='#0b1730',fg=WHITE,insertbackground=WHITE,
-                            font=('Segoe UI',12,'bold'),relief='groove',bd=1)
-        pair_entry.pack(side='left',ipady=7)
+        pair_combo_main=ttk.Combobox(search_controls,textvariable=self.main_pair_var,
+                                      values=pair_values,state='readonly',width=16,
+                                      font=('Segoe UI',11,'bold'))
+        pair_combo_main.pack(side='left',ipady=5)
         def run_main_pair_search(event=None):
             p=self.main_pair_var.get().strip().upper().replace(' ','')
-            if len(p)==2 and p[0] in CARDS and p[1] in CARDS:
+            if p in pair_values:
                 self.pair.set(p)
                 self.analyze()
             else:
-                messagebox.showwarning('Pair Search','Enter a valid pair such as Q6, JQ, 10A, etc.')
+                messagebox.showwarning('Pair Search','Please select a Dragon + Tiger pair.')
         tk.Button(search_controls,text='SEARCH',command=run_main_pair_search,
                   bg=BLUE,fg='white',activebackground='#0b78ff',activeforeground='white',
                   font=('Segoe UI',10,'bold'),relief='groove',bd=1,
                   padx=18,pady=7).pack(side='left',padx=(12,0))
-        pair_entry.bind('<Return>',run_main_pair_search)
+        pair_combo_main.bind('<<ComboboxSelected>>',run_main_pair_search)
 
         divider=tk.Frame(search_row,bg=BORDER,width=1)
         divider.pack(side='left',fill='y',pady=4)
@@ -410,7 +415,7 @@ class App:
         # Bottom prediction history summary
         dash=tk.LabelFrame(self.root,text='  PREDICTION HISTORY  ',bg=PANEL,fg=YELLOW,
                            font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        dash.pack(fill='both',expand=True,padx=18,pady=(3,7))
+        dash.pack(fill='both',expand=True,padx=18,pady=(3,7),ipady=4)
         self.prediction_dashboard=tk.Frame(dash,bg=PANEL)
         self.prediction_dashboard.pack(fill='both',expand=True,padx=8,pady=5)
 
