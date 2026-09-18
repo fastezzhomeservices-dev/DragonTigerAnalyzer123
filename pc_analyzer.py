@@ -77,17 +77,6 @@ class App:
             tk.Button(tools,text=text,command=cmd,bg='#374151',fg='white',activebackground='#4b5563',activeforeground='white',font=('Segoe UI',10,'bold'),relief='flat',padx=11,pady=7).pack(side='left',padx=4)
         tk.Label(tools,text='Historical statistical reference only',bg='#111827',fg='#9ca3af',font=('Segoe UI',9)).pack(side='right',padx=10)
 
-        collector = tk.LabelFrame(self.root,text='  YOLOBET9 DATE-WISE RESULT COLLECTOR  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
-        collector.pack(fill='x',padx=18,pady=6)
-        tk.Label(collector,text='Date',bg='#111827',fg='white',font=('Segoe UI',10,'bold')).grid(row=0,column=0,padx=(12,4),pady=9)
-        tk.Entry(collector,textvariable=self.collect_date,bg='#1f2937',fg='white',insertbackground='white',width=13,relief='flat').grid(row=0,column=1,padx=4)
-        tk.Label(collector,text='Entries',bg='#111827',fg='white',font=('Segoe UI',10,'bold')).grid(row=0,column=2,padx=(14,4))
-        ttk.Combobox(collector,textvariable=self.entries,values=[10,25,50,100],state='readonly',width=7).grid(row=0,column=3,padx=4)
-        tk.Button(collector,text='PASTE RESULTS',command=self.paste_results,bg='#2563eb',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).grid(row=0,column=4,padx=6)
-        tk.Button(collector,text='FILTER DATE',command=self.filter_date,bg='#0f766e',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).grid(row=0,column=5,padx=6)
-        tk.Label(collector,text='Date-wise paste/import only — no URL required',bg='#111827',fg='#86efac',font=('Segoe UI',9,'bold')).grid(row=1,column=0,columnspan=7,padx=12,pady=(2,9),sticky='w')
-        tk.Label(collector,textvariable=self.status,bg='#111827',fg='#86efac',font=('Segoe UI',9,'bold')).grid(row=0,column=6,padx=12)
-
         pair = tk.LabelFrame(self.root,text='  PAIR REFERENCE / STATISTICAL PREDICTION  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         pair.pack(fill='x',padx=18,pady=6)
         tk.Label(pair,text='Pair',bg='#111827',fg='white',font=('Segoe UI',10,'bold')).pack(side='left',padx=(12,5),pady=10)
