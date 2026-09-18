@@ -117,6 +117,8 @@ class App:
         last = tk.LabelFrame(self.root,text='  LAST RESULT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         last.pack(fill='x',padx=18,pady=6)
         self.last_frame = tk.Frame(last,bg='#111827'); self.last_frame.pack(fill='x',padx=10,pady=7)
+        self.last_analysis = tk.StringVar(value='LAST RESULT ANALYSIS | Add/import rounds to see previous history, card numbers and next historical rounds')
+        tk.Label(last,textvariable=self.last_analysis,bg='#111827',fg='#fde68a',font=('Segoe UI',10,'bold'),anchor='w').pack(fill='x',padx=10,pady=(0,6))
 
         table = tk.Frame(self.root,bg='#111827'); table.pack(fill='both',expand=True,padx=18,pady=(4,12))
         cols=('S NO','ROUND ID','TIME','DRAGON','TIGER','RESULT','PAIR','D O/E','T O/E','PREV RESULT')
@@ -147,9 +149,39 @@ class App:
             prev = rows[i-1].get('result','') if i else ''
             self.tree.insert('', 'end', values=(r.get('sno',''),r.get('round_id',''),r.get('time',''),r.get('dragon',''),r.get('tiger',''),r.get('result',''),r.get('dragon','')+r.get('tiger',''),self.oe(r.get('dragon','')),self.oe(r.get('tiger','')),prev),tags=(self.tag_for(r.get('result','D')),))
         for x in self.last_frame.winfo_children(): x.destroy()
-        for r in self.data[-14:]:
-            tk.Label(self.last_frame,text=r.get('result',''),bg=RESULT_COLORS.get(r.get('result','D'),'#374151'),fg='white',font=('Segoe UI',10,'bold'),width=4,height=2,relief='ridge',bd=1).pack(side='right',padx=3)
+        recent = self.data[-14:]
+        for r in recent:
+            res=r.get('result','')
+            card=f'{r.get("dragon","")}/{r.get("tiger","")}'
+            box=tk.Frame(self.last_frame,bg=RESULT_COLORS.get(res,'#374151'),bd=1,relief='ridge')
+            tk.Label(box,text=res,bg=RESULT_COLORS.get(res,'#374151'),fg='white',font=('Segoe UI',11,'bold'),width=4).pack(padx=3,pady=(2,0))
+            tk.Label(box,text=card,bg=RESULT_COLORS.get(res,'#374151'),fg='white',font=('Segoe UI',8,'bold')).pack(padx=3,pady=(0,2))
+            box.pack(side='right',padx=2)
+        self.update_last_analysis()
         self.update_title_counts()
+
+    def update_last_analysis(self):
+        if not self.data:
+            self.last_analysis.set('LAST RESULT ANALYSIS | No rounds loaded')
+            return
+        idx=len(self.data)-1
+        cur=self.data[idx]
+        cur_pair=f'{cur.get("dragon","")}{cur.get("tiger","")}'
+        cur_desc=f'{cur.get("result","")} | D:{cur.get("dragon","")} ({self.oe(cur.get("dragon",""))}) | T:{cur.get("tiger","")} ({self.oe(cur.get("tiger",""))}) | Pair:{cur_pair}'
+        prev=[]
+        for j in range(max(0,idx-5),idx):
+            q=self.data[j]
+            prev.append(f'{q.get("result","")}[{q.get("dragon","")}/{q.get("tiger","")}]')
+        # Historical occurrences of the current result + pair: show what came immediately after each occurrence.
+        matches=[]
+        for j,r in enumerate(self.data[:-1]):
+            if r.get("result")==cur.get("result") and r.get("dragon","")+r.get("tiger","")==cur_pair:
+                nxt=self.data[j+1]
+                matches.append(f'{nxt.get("result","")} D:{nxt.get("dragon","")} T:{nxt.get("tiger","")}')
+        after=' | '.join(matches[-3:]) if matches else 'No previous matching occurrence with a following round'
+        self.last_analysis.set(
+            f'LAST: {cur_desc}   |   PREVIOUS 5: {"  ".join(prev) if prev else "-"}   |   AFTER SAME RESULT+PAIR: {after}'
+        )
 
     def update_title_counts(self):
         c=Counter(r.get('result') for r in self.data)
