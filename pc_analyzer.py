@@ -312,6 +312,7 @@ class App:
             ('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),
             ('LIVE DRAGON TIGER',self.open_live_browser),('THEME / BACKGROUND',self.open_theme_settings),
             ('PAIR SEARCH',self.open_pair_search),
+            ('PAIR HISTORY',self.show_pair_history),
             ('RESULT HISTORY',self.show_result_history),
             ('PRODUCTION RESULT ENTRY',self.open_production_entry),
             ('DOWNLOAD HISTORY',self.download_history)
