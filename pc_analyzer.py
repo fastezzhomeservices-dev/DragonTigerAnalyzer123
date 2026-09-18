@@ -727,13 +727,31 @@ class App:
                 q=self.data[j]; nxt.append(f'{q.get("result","")} {q.get("dragon","")}{q.get("tiger","")}')
             while len(nxt)<6: nxt.append('-')
             self.report_tree.insert('', 'end', values=(r.get('sno',''),' | '.join(prev) if prev else '-',f'{r.get("result","")} {p}',nxt[0],nxt[1],nxt[2],nxt[3],nxt[4],nxt[5]),tags=(self.tag_for(r.get('result','D')),))
-
-    def _circle(self, parent, result, size=42):
-        cv=tk.Canvas(parent,width=size,height=size+12,bg='#111827',highlightthickness=0)
-        color=RESULT_COLORS.get(result,'#374151')
-        cv.create_oval(2,2,size-2,size-2,fill=color,outline='')
-        cv.create_text(size/2,size/2,text=result,fill='white',font=('Segoe UI',9,'bold'))
-        return cv
+    def _show_pair_result_popup(self, item):
+        pair=str(item.get('pair','')).strip().upper().replace(' ','')
+        pred=normalize_result(item.get('prediction','')) or 'TIE'
+        d=clean_card(pair[:2] if len(pair)==3 and pair[:2]=='10' else pair[:1])
+        t=clean_card(pair[2:] if len(pair)==3 and pair[:2]=='10' else pair[1:2])
+        if not d or not t:
+            d=clean_card(item.get('dragon',''))
+            t=clean_card(item.get('tiger',''))
+        win=tk.Toplevel(self.root)
+        win.title('Pair Result')
+        win.geometry('250x185')
+        win.resizable(False,False)
+        win.configure(bg='#071a35')
+        try:
+            x=self.root.winfo_pointerx()+12; y=self.root.winfo_pointery()+12
+            win.geometry(f'250x185+{x}+{y}')
+        except Exception:
+            pass
+        tk.Label(win,text=f'PAIR  {pair or "-"}',bg='#071a35',fg='#ffe600',font=('Segoe UI',13,'bold')).pack(pady=(10,5))
+        tk.Label(win,text=f'RESULT: {pred}',bg='#071a35',fg=RESULT_COLORS.get(pred,'white'),font=('Segoe UI',15,'bold')).pack(pady=2)
+        tk.Label(win,text=f'DRAGON: {d or "-"}   ({self.oe(d) if d else "-"})',bg='#071a35',fg='#22c55e',font=('Segoe UI',11,'bold')).pack(pady=2)
+        tk.Label(win,text=f'TIGER:  {t or "-"}   ({self.oe(t) if t else "-"})',bg='#071a35',fg='#f59e0b',font=('Segoe UI',11,'bold')).pack(pady=2)
+        tk.Button(win,text='CLOSE',command=win.destroy,bg='#0758d9',fg='white',font=('Segoe UI',9,'bold'),relief='groove',bd=1,padx=14,pady=4).pack(pady=7)
+        win.transient(self.root)
+        win.lift()
 
     def render_pair_history(self):
         if not hasattr(self,'pair_history_frame'): return
@@ -744,30 +762,23 @@ class App:
             return
 
         # Show exactly the latest 15 searches as one continuous compact row.
-        # No large card/pair/sequence gaps: each result occupies one fixed slot.
+        # Smaller circles keep the full 15 visible; click any circle for pair/card odd-even details.
         strip=tk.Frame(self.pair_history_frame,bg='#111827')
         strip.pack(side='left',fill='x',expand=True)
         for item in items:
-            slot=tk.Frame(strip,bg='#111827',width=62,height=58)
+            slot=tk.Frame(strip,bg='#111827',width=52,height=50,cursor='hand2')
             slot.pack(side='left',fill='y',padx=0)
             slot.pack_propagate(False)
-            pred=normalize_result(item.get('prediction',''))
-            if not pred:
-                pred='TIE'
-            self._circle(slot,pred,48).pack(anchor='center',pady=2)
+            pred=normalize_result(item.get('prediction','')) or 'TIE'
+            cv=self._circle(slot,pred,40)
+            cv.pack(anchor='center',pady=2)
+            cv.bind('<Button-1>',lambda e,it=item:self._show_pair_result_popup(it))
+            slot.bind('<Button-1>',lambda e,it=item:self._show_pair_result_popup(it))
 
         tk.Label(self.pair_history_frame,text=f'Total History: {len(self.pair_history)}',
-                 bg='#111827',fg='#ffe600',font=('Segoe UI',9,'bold'),
-                 relief='groove',bd=1,padx=10,pady=5).pack(side='right',padx=(6,2),pady=9)
+                 bg='#111827',fg='#ffe600',font=('Segoe UI',8,'bold'),
+                 relief='groove',bd=1,padx=8,pady=4).pack(side='right',padx=(4,2),pady=8)
 
-    def save_production_result(self):
-        prediction=normalize_result(self.current_prediction.get())
-        correct=self.prediction_correct.get().strip().upper()
-        d=clean_card(self.actual_dragon.get())
-        t=clean_card(self.actual_tiger.get())
-        final=normalize_result(self.final_result.get())
-        if not prediction or prediction not in ('D','T'):
-            messagebox.showwarning('Save Result','Run Pair Analysis first so the displayed D/T prediction can be saved.')
             return
         if correct not in ('YES','NO'):
             messagebox.showwarning('Save Result','Select YES or NO for whether the prediction came.')
