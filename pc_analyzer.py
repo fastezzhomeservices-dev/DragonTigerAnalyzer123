@@ -265,7 +265,7 @@ class App:
         RED = '#ff2028'
 
         self.root.configure(bg=BG)
-        self.root.geometry('1280x760')
+        self.root.geometry('1366x820')
         self.root.minsize(1100,700)
         try:
             self.root.state('zoomed')
@@ -311,7 +311,7 @@ class App:
         ver.pack(side='right',padx=20)
 
         # Navigation
-        nav=tk.Frame(self.root,bg=BG); nav.pack(fill='x',padx=18,pady=(8,5))
+        nav=tk.Frame(self.root,bg=BG); nav.pack(fill='x',padx=18,pady=(4,3))
         nav_buttons=[
             ('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),
             ('LIVE DRAGON TIGER',self.open_live_browser),('THEME / BACKGROUND',self.open_theme_settings),
@@ -330,7 +330,7 @@ class App:
                          font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         ph.pack(fill='x',padx=18,pady=3)
         # Main Pair Search controls are part of the approved reference layout.
-        search_row=tk.Frame(ph,bg=PANEL,height=78)
+        search_row=tk.Frame(ph,bg=PANEL,height=70)
         search_row.pack(fill='x',padx=8,pady=(3,0))
         search_row.pack_propagate(False)
 
@@ -363,7 +363,7 @@ class App:
         divider=tk.Frame(search_row,bg=BORDER,width=1)
         divider.pack(side='left',fill='y',pady=4)
 
-        self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=72)
+        self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=64)
         self.pair_history_frame.pack(side='left',fill='both',expand=True,padx=(8,0))
         self.pair_history_frame.pack_propagate(False)
         self.render_pair_history()
@@ -372,7 +372,7 @@ class App:
         chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg=PANEL,fg=YELLOW,
                                 font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         chart_box.pack(fill='x',padx=18,pady=3)
-        self.chart_frame=tk.Frame(chart_box,bg=PANEL,height=62)
+        self.chart_frame=tk.Frame(chart_box,bg=PANEL,height=52)
         self.chart_frame.pack(fill='x',padx=10,pady=3)
         self.chart_frame.pack_propagate(False)
 
@@ -380,7 +380,7 @@ class App:
         report=tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg=PANEL,fg=YELLOW,
                              font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         report.pack(fill='x',padx=18,pady=3)
-        report_table=tk.Frame(report,bg=PANEL,height=145)
+        report_table=tk.Frame(report,bg=PANEL,height=112)
         report_table.pack(fill='x',padx=8,pady=3)
         report_table.pack_propagate(False)
         rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
@@ -400,7 +400,7 @@ class App:
         prod=tk.LabelFrame(self.root,text='  PRODUCTION RESULT ENTRY  ',bg=PANEL,fg=YELLOW,
                            font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         prod.pack(fill='x',padx=18,pady=3)
-        prod_table=tk.Frame(prod,bg=PANEL,height=82)
+        prod_table=tk.Frame(prod,bg=PANEL,height=68)
         prod_table.pack(fill='x',padx=8,pady=3)
         prod_table.pack_propagate(False)
         pcols=('S NO','ROUND ID','TIME','DRAGON','TIGER','TIE','PREDICTION','RESULT','PAIR','D Q/E','T Q/E','PREV RESULT')
@@ -417,9 +417,9 @@ class App:
         # Bottom prediction history summary
         dash=tk.LabelFrame(self.root,text='  PREDICTION HISTORY  ',bg=PANEL,fg=YELLOW,
                            font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        dash.pack(fill='both',expand=True,padx=18,pady=(3,7),ipady=4)
+        dash.pack(fill='x',padx=18,pady=(3,7),ipady=2)
         self.prediction_dashboard=tk.Frame(dash,bg=PANEL)
-        self.prediction_dashboard.pack(fill='both',expand=True,padx=8,pady=5)
+        self.prediction_dashboard.pack(fill='x',padx=8,pady=2)
 
         # Hidden compatibility widgets used by existing analysis/export methods.
         self.pair=tk.StringVar(value='JQ')
