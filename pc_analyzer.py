@@ -822,6 +822,12 @@ class App:
                  bg='#111827',fg='#ffe600',font=('Segoe UI',8,'bold'),
                  relief='groove',bd=1,padx=8,pady=4).pack(side='right',padx=(4,2),pady=8)
 
+    def save_production_result(self):
+        correct=self.prediction_correct.get().strip().upper()
+        d=clean_card(self.actual_dragon.get())
+        t=clean_card(self.actual_tiger.get())
+        final=normalize_result(self.final_result.get())
+        prediction=normalize_result(self.current_prediction.get())
         if correct not in ('YES','NO'):
             messagebox.showwarning('Save Result','Select YES or NO for whether the prediction came.')
             return
@@ -848,6 +854,7 @@ class App:
         self.prediction_correct.set(''); self.actual_dragon.set(''); self.actual_tiger.set('')
         messagebox.showinfo('Saved','Production result saved successfully.')
         self.show_result_history()
+
 
     def show_pair_history(self):
         win=tk.Toplevel(self.root); win.title('Pair Search History'); win.geometry('900x500'); win.configure(bg=self._theme()['root'])
