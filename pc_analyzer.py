@@ -61,7 +61,8 @@ class App:
         s.configure('TLabel', background='#111827', foreground='#f3f4f6', font=('Segoe UI',10))
         s.configure('TButton', font=('Segoe UI',10,'bold'), padding=(11,7), background='#374151', foreground='white')
         s.map('TButton', background=[('active','#4b5563')])
-        s.configure('TCombobox', fieldbackground='#1f2937', background='#374151', foreground='white')
+        s.configure('TCombobox', fieldbackground='#1f2937', background='#374151', foreground='#f9fafb', selectbackground='#2563eb', selectforeground='white')
+        s.map('TCombobox', fieldbackground=[('readonly','#1f2937')], foreground=[('readonly','#f9fafb')], selectbackground=[('readonly','#2563eb')], selectforeground=[('readonly','white')])
         s.configure('Treeview', background='#1f2937', fieldbackground='#1f2937', foreground='#f9fafb', rowheight=32, font=('Segoe UI',9))
         s.configure('Treeview.Heading', background='#7f1d1d', foreground='white', font=('Segoe UI',9,'bold'), padding=7)
 
@@ -103,6 +104,15 @@ class App:
         ttk.Combobox(pair,textvariable=self.pair,values=[a+b for a in CARDS for b in CARDS],width=12).pack(side='left',padx=5)
         tk.Button(pair,text='ANALYZE',command=self.analyze,bg='#b91c1c',fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=14,pady=6).pack(side='left',padx=6)
         tk.Label(pair,textvariable=self.summary,bg='#111827',fg='#fde68a',font=('Segoe UI',10,'bold')).pack(side='left',padx=20)
+        report = tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
+        report.pack(fill='x',padx=18,pady=6)
+        report_table = tk.Frame(report,bg='#111827'); report_table.pack(fill='x',padx=8,pady=6)
+        rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3')
+        self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=4)
+        rwidths={'OCCURRENCE':90,'PREVIOUS 3':300,'MATCH':90,'NEXT 1':95,'NEXT 2':95,'NEXT 3':95}
+        for c in rcols:
+            self.report_tree.heading(c,text=c); self.report_tree.column(c,width=rwidths[c],anchor='center')
+        self.report_tree.pack(fill='x',expand=True)
 
         last = tk.LabelFrame(self.root,text='  LAST RESULT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         last.pack(fill='x',padx=18,pady=6)
@@ -146,11 +156,25 @@ class App:
         self.summary.set(f'PAIR {self.pair.get().upper()} | D {c["D"]} | T {c["T"]} | TIE {c["TIE"]} | TOTAL {len(self.data)}')
 
     def analyze(self):
-        p=self.pair.get().upper().strip(); rows=[r for r in self.data if r.get('dragon','')+r.get('tiger','')==p]
+        p=self.pair.get().upper().strip()
+        rows=[r for r in self.data if r.get('dragon','')+r.get('tiger','')==p]
         cnt=Counter(r.get('result') for r in rows)
-        if not rows: self.summary.set(f'PAIR {p} | NO HISTORY'); return
+        for x in self.report_tree.get_children(): self.report_tree.delete(x)
+        if not rows:
+            self.summary.set(f'PAIR {p} | NO HISTORY')
+            return
         maxres=max(RESULTS,key=lambda x:cnt[x]); pct=cnt[maxres]/len(rows)*100
-        self.summary.set(f'PAIR {p} | MATCH {len(rows)} | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MAX {maxres} ({pct:.1f}%)')
+        self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MOST {maxres} ({pct:.1f}%)')
+        for idx,r in enumerate(self.data):
+            if r.get('dragon','')+r.get('tiger','') != p: continue
+            prev=[]
+            for j in range(max(0,idx-3),idx):
+                q=self.data[j]; prev.append(f'{q.get("result","")} {q.get("dragon","")}{q.get("tiger","")}')
+            nxt=[]
+            for j in range(idx+1,min(len(self.data),idx+4)):
+                q=self.data[j]; nxt.append(f'{q.get("result","")} {q.get("dragon","")}{q.get("tiger","")}')
+            while len(nxt)<3: nxt.append('-')
+            self.report_tree.insert('', 'end', values=(r.get('sno',''),' | '.join(prev) if prev else '-',f'{r.get("result","")} {p}',nxt[0],nxt[1],nxt[2]),tags=(self.tag_for(r.get('result','D')),))
 
     def import_data(self):
         path=filedialog.askopenfilename(filetypes=[('Excel','*.xlsx'),('CSV','*.csv'),('All files','*.*')])
