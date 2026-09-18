@@ -380,46 +380,18 @@ class App:
                  width=5).pack(side='left',padx=(0,10))
         ref_combo.bind('<<ComboboxSelected>>',run_reference_search)
 
-        # Pair search history
+        # Pair search history — pair selector is kept only in the mandatory reference row above.
+        # This section is reserved for the latest 15 history results, avoiding a duplicate Enter Pair control.
         ph=tk.LabelFrame(content,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
                          font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         ph.pack(fill='x',padx=12,pady=2)
-        # Main Pair Search controls are part of the approved reference layout.
-        search_row=tk.Frame(ph,bg=PANEL,height=70)
+
+        search_row=tk.Frame(ph,bg=PANEL,height=58)
         search_row.pack(fill='x',padx=8,pady=(3,0))
         search_row.pack_propagate(False)
 
-        left_search=tk.Frame(search_row,bg=PANEL,width=360)
-        left_search.pack(side='left',fill='y',padx=(4,8))
-        left_search.pack_propagate(False)
-        tk.Label(left_search,text='Enter Pair (e.g. Q6)',bg=PANEL,fg=WHITE,
-                 font=('Segoe UI',10,'bold')).pack(anchor='w',pady=(7,4))
-        search_controls=tk.Frame(left_search,bg=PANEL)
-        search_controls.pack(anchor='w')
-        pair_values=[a+b for a in CARDS for b in CARDS]
-        self.main_pair_var=tk.StringVar(value=self.pair.get() or 'Q6')
-        pair_combo_main=ttk.Combobox(search_controls,textvariable=self.main_pair_var,
-                                      values=pair_values,state='readonly',width=16,
-                                      font=('Segoe UI',11,'bold'))
-        pair_combo_main.pack(side='left',ipady=5)
-        def run_main_pair_search(event=None):
-            p=self.main_pair_var.get().strip().upper().replace(' ','')
-            if p in pair_values:
-                self.pair.set(p)
-                self.analyze()
-            else:
-                messagebox.showwarning('Pair Search','Please select a Dragon + Tiger pair.')
-        tk.Button(search_controls,text='SEARCH',command=run_main_pair_search,
-                  bg=BLUE,fg='white',activebackground='#0b78ff',activeforeground='white',
-                  font=('Segoe UI',10,'bold'),relief='groove',bd=1,
-                  padx=18,pady=7).pack(side='left',padx=(12,0))
-        pair_combo_main.bind('<<ComboboxSelected>>',run_main_pair_search)
-
-        divider=tk.Frame(search_row,bg=BORDER,width=1)
-        divider.pack(side='left',fill='y',pady=4)
-
-        self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=64)
-        self.pair_history_frame.pack(side='left',fill='both',expand=True,padx=(8,0))
+        self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=54)
+        self.pair_history_frame.pack(fill='both',expand=True)
         self.pair_history_frame.pack_propagate(False)
         self.render_pair_history()
 
