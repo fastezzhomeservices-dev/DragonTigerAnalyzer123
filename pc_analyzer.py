@@ -5,6 +5,10 @@ from collections import Counter
 import csv
 import re
 import html
+import os
+import json
+import shutil
+from PIL import Image, ImageTk
 
 CARDS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
 ODD = {'A','3','5','7','9','J','K'}
@@ -47,9 +51,165 @@ class App:
         self.collect_date = tk.StringVar(value=datetime.now().strftime('%d/%m/%Y'))
         self.entries = tk.IntVar(value=50)
         self.status = tk.StringVar(value='Ready')
+        self.settings_dir = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'DragonTigerAnalyzer')
+        self.settings_file = os.path.join(self.settings_dir, 'settings.json')
+        self.theme_name = 'Dark Red'
+        self.background_path = ''
+        self.bg_photo = None
+        self.load_settings()
         self.build_styles()
         self.build_ui()
+        self.setup_background()
         self.refresh()
+
+    def load_settings(self):
+        try:
+            with open(self.settings_file, 'r', encoding='utf-8') as f:
+                s = json.load(f)
+            self.theme_name = s.get('theme', 'Dark Red')
+            self.background_path = s.get('background', '')
+        except Exception:
+            pass
+
+    def save_settings(self):
+        try:
+            os.makedirs(self.settings_dir, exist_ok=True)
+            with open(self.settings_file, 'w', encoding='utf-8') as f:
+                json.dump({'theme': self.theme_name, 'background': self.background_path}, f, indent=2)
+        except Exception:
+            pass
+
+    def setup_background(self):
+        self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
+        self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_canvas.lower()
+        self.root.bind('<Configure>', self._resize_background)
+        self.apply_theme(self.theme_name, save=False)
+
+    def _resize_background(self, event=None):
+        if not getattr(self, 'background_path', '') or not os.path.exists(self.background_path):
+            return
+        try:
+            im = Image.open(self.background_path).convert('RGB')
+            w, h = max(1, self.root.winfo_width()), max(1, self.root.winfo_height())
+            im.thumbnail((w, h), Image.LANCZOS)
+            self.bg_photo = ImageTk.PhotoImage(im)
+            self.bg_canvas.delete('all')
+            self.bg_canvas.create_image(w//2, h//2, image=self.bg_photo, anchor='center')
+        except Exception:
+            pass
+
+    def choose_background(self):
+        path = filedialog.askopenfilename(filetypes=[('Images','*.png;*.jpg;*.jpeg;*.gif;*.bmp'),('All files','*.*')])
+        if not path:
+            return
+        try:
+            os.makedirs(self.settings_dir, exist_ok=True)
+            dest = os.path.join(self.settings_dir, 'background' + os.path.splitext(path)[1].lower())
+            shutil.copy2(path, dest)
+            self.background_path = dest
+            self.save_settings()
+            self._resize_background()
+            self.status.set('Custom background applied and saved.')
+        except Exception as e:
+            messagebox.showerror('Background', str(e))
+
+    def reset_background(self):
+        self.background_path = ''
+        self.save_settings()
+        self.bg_photo = None
+        self.bg_canvas.delete('all')
+        self.bg_canvas.configure(bg=self._theme()['root'])
+        self.status.set('Background reset to theme default.')
+
+    def export_theme(self):
+        path = filedialog.asksaveasfilename(defaultextension='.json', filetypes=[('Theme Settings','*.json')], initialfile='DragonTigerTheme.json')
+        if not path:
+            return
+        try:
+            payload = {'theme': self.theme_name}
+            if self.background_path and os.path.exists(self.background_path):
+                ext = os.path.splitext(self.background_path)[1].lower() or '.png'
+                bg_dest = os.path.splitext(path)[0] + ext
+                shutil.copy2(self.background_path, bg_dest)
+                payload['background_file'] = os.path.basename(bg_dest)
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(payload, f, indent=2)
+            messagebox.showinfo('Theme Export', 'Theme settings exported successfully. If a custom background is used, its image was exported beside the JSON file.')
+        except Exception as e:
+            messagebox.showerror('Theme Export', str(e))
+
+    def _theme(self):
+        themes = {
+            'Dark Red': {'root':'#111827','panel':'#111827','header':'#7f1d1d','heading':'#7f1d1d','button':'#374151','text':'#f9fafb','accent':'#fbbf24'},
+            'Midnight Blue': {'root':'#0b1220','panel':'#0b1220','header':'#1e3a8a','heading':'#1e40af','button':'#1e293b','text':'#f8fafc','accent':'#60a5fa'},
+            'Emerald': {'root':'#071a14','panel':'#071a14','header':'#065f46','heading':'#047857','button':'#1f2937','text':'#ecfdf5','accent':'#34d399'},
+            'Purple': {'root':'#140d20','panel':'#140d20','header':'#581c87','heading':'#6b21a8','button':'#312e3f','text':'#faf5ff','accent':'#d8b4fe'},
+            'Light': {'root':'#eef2f7','panel':'#eef2f7','header':'#334155','heading':'#475569','button':'#dbe2ea','text':'#111827','accent':'#b45309'}
+        }
+        return themes.get(self.theme_name, themes['Dark Red'])
+
+    def apply_theme(self, name=None, save=True):
+        if name:
+            self.theme_name = name
+        t = self._theme()
+        def walk(w):
+            try:
+                cls = w.winfo_class()
+                if cls in ('Frame','Labelframe','TFrame','TLabelframe'):
+                    w.configure(bg=t['panel'])
+                elif cls in ('Label','TLabel'):
+                    w.configure(bg=t['panel'], fg=t['text'])
+                elif cls in ('Button','TButton'):
+                    w.configure(bg=t['button'], fg=t['text'])
+                elif cls == 'Canvas' and w is not getattr(self, 'bg_canvas', None):
+                    w.configure(bg=t['panel'])
+            except Exception:
+                pass
+            for child in w.winfo_children():
+                walk(child)
+        walk(self.root)
+        try:
+            self.root.configure(bg=t['root'])
+            self.bg_canvas.configure(bg=t['root'])
+            self.root.children.get('!frame')
+            s=ttk.Style()
+            s.configure('TFrame', background=t['panel'])
+            s.configure('TLabelframe', background=t['panel'], foreground=t['text'])
+            s.configure('TLabelframe.Label', background=t['panel'], foreground=t['accent'])
+            s.configure('TLabel', background=t['panel'], foreground=t['text'])
+            s.configure('TButton', background=t['button'], foreground=t['text'])
+            s.map('TButton', background=[('active',t['heading'])])
+            s.configure('Treeview', background='#1f2937' if self.theme_name != 'Light' else '#ffffff', fieldbackground='#1f2937' if self.theme_name != 'Light' else '#ffffff', foreground='#f9fafb' if self.theme_name != 'Light' else '#111827')
+            s.configure('Treeview.Heading', background=t['heading'], foreground='white')
+            s.configure('TCombobox', fieldbackground='#1f2937' if self.theme_name != 'Light' else '#ffffff', background=t['button'], foreground=t['text'], selectbackground=t['heading'], selectforeground='white')
+        except Exception:
+            pass
+        if save:
+            self.save_settings()
+        if getattr(self, 'background_path', ''):
+            self._resize_background()
+
+    def open_theme_settings(self):
+        win=tk.Toplevel(self.root)
+        win.title('Theme & Background')
+        win.geometry('430x260')
+        win.resizable(False, False)
+        t=self._theme()
+        win.configure(bg=t['root'])
+        tk.Label(win,text='THEME & BACKGROUND',bg=t['root'],fg=t['accent'],font=('Segoe UI',14,'bold')).pack(pady=(18,12))
+        row=tk.Frame(win,bg=t['root']); row.pack(fill='x',padx=25,pady=6)
+        tk.Label(row,text='Theme',bg=t['root'],fg=t['text'],font=('Segoe UI',10,'bold')).pack(side='left')
+        theme_var=tk.StringVar(value=self.theme_name)
+        cb=ttk.Combobox(row,textvariable=theme_var,values=['Dark Red','Midnight Blue','Emerald','Purple','Light'],state='readonly',width=20)
+        cb.pack(side='right')
+        def apply_and_close():
+            self.apply_theme(theme_var.get())
+            win.destroy()
+        tk.Button(win,text='APPLY THEME',command=apply_and_close,bg=t['heading'],fg='white',font=('Segoe UI',10,'bold'),relief='flat',padx=16,pady=7).pack(pady=8)
+        tk.Button(win,text='CHOOSE BACKGROUND IMAGE',command=self.choose_background,bg=t['button'],fg=t['text'],font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).pack(pady=4)
+        tk.Button(win,text='RESET BACKGROUND',command=self.reset_background,bg=t['button'],fg=t['text'],font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).pack(pady=4)
+        tk.Button(win,text='EXPORT THEME',command=self.export_theme,bg=t['button'],fg=t['text'],font=('Segoe UI',10,'bold'),relief='flat',padx=12,pady=7).pack(pady=4)
 
     def build_styles(self):
         s = ttk.Style()
@@ -73,7 +233,7 @@ class App:
         tk.Label(header,text='PC ANALYZER',bg='#7f1d1d',fg='#fde68a',font=('Segoe UI',15,'bold')).pack(side='right',padx=20)
 
         tools = tk.Frame(self.root,bg='#111827'); tools.pack(fill='x',padx=18,pady=(11,4))
-        for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data)]:
+        for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),('THEME / BACKGROUND',self.open_theme_settings)]:
             tk.Button(tools,text=text,command=cmd,bg='#374151',fg='white',activebackground='#4b5563',activeforeground='white',font=('Segoe UI',10,'bold'),relief='flat',padx=11,pady=7).pack(side='left',padx=4)
         tk.Label(tools,text='Historical statistical reference only',bg='#111827',fg='#9ca3af',font=('Segoe UI',9)).pack(side='right',padx=10)
 
