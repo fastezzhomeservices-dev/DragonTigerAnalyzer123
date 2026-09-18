@@ -292,7 +292,7 @@ class App:
         ttk.Combobox(entry,textvariable=self.final_result,values=RESULTS,state='readonly',width=7).pack(side='left')
         tk.Button(entry,text='SAVE RESULT',command=self.save_production_result,bg='#15803d',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=5).pack(side='left',padx=8)
         tk.Button(entry,text='DOWNLOAD HISTORY',command=self.download_history,bg='#374151',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=5).pack(side='left',padx=4)
-                chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
+        chart_box=tk.LabelFrame(self.root,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         chart_box.pack(fill='x',padx=18,pady=6)
         self.chart_frame=tk.Frame(chart_box,bg='#111827',height=95); self.chart_frame.pack(fill='x',padx=10,pady=8)
         # Occurrence report: one visible Treeview only.
@@ -473,7 +473,6 @@ class App:
         self.save_settings()
 
         rows=existing_rows
-        rows=[r for r in self.data if r.get('dragon','')+r.get('tiger','')==p]
         cnt=Counter(r.get('result') for r in rows)
         for x in self.report_tree.get_children(): self.report_tree.delete(x)
         if not rows:
