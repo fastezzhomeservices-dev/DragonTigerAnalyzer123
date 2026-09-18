@@ -107,9 +107,9 @@ class App:
         report = tk.LabelFrame(self.root,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg='#111827',fg='#fbbf24',font=('Segoe UI',11,'bold'),bd=1,relief='groove')
         report.pack(fill='x',padx=18,pady=6)
         report_table = tk.Frame(report,bg='#111827'); report_table.pack(fill='x',padx=8,pady=6)
-        rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3')
-        self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=4)
-        rwidths={'OCCURRENCE':90,'PREVIOUS 3':300,'MATCH':90,'NEXT 1':95,'NEXT 2':95,'NEXT 3':95}
+        rcols=('OCCURRENCE','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
+        self.report_tree=ttk.Treeview(report_table,columns=rcols,show='headings',height=6)
+        rwidths={'OCCURRENCE':90,'PREVIOUS 3':250,'MATCH':90,'NEXT 1':90,'NEXT 2':90,'NEXT 3':90,'NEXT 4':90,'NEXT 5':90,'NEXT 6':90}
         for c in rcols:
             self.report_tree.heading(c,text=c); self.report_tree.column(c,width=rwidths[c],anchor='center')
         self.report_tree.pack(fill='x',expand=True)
@@ -127,6 +127,9 @@ class App:
         for c in cols:
             self.tree.heading(c,text=c); self.tree.column(c,width=widths[c],anchor='center')
         for tag,color in [('dragon','#14532d'),('tiger','#92400e'),('tie','#4c1d95')]: self.tree.tag_configure(tag,background=color,foreground='white')
+        self.report_tree.tag_configure('dragon',background='#14532d',foreground='white')
+        self.report_tree.tag_configure('tiger',background='#92400e',foreground='white')
+        self.report_tree.tag_configure('tie',background='#4c1d95',foreground='white')
         self.tree.pack(side='left',fill='both',expand=True)
         y=ttk.Scrollbar(table,orient='vertical',command=self.tree.yview); y.pack(side='right',fill='y'); self.tree.configure(yscrollcommand=y.set)
 
@@ -203,10 +206,10 @@ class App:
             for j in range(max(0,idx-3),idx):
                 q=self.data[j]; prev.append(f'{q.get("result","")} {q.get("dragon","")}{q.get("tiger","")}')
             nxt=[]
-            for j in range(idx+1,min(len(self.data),idx+4)):
+            for j in range(idx+1,min(len(self.data),idx+7)):
                 q=self.data[j]; nxt.append(f'{q.get("result","")} {q.get("dragon","")}{q.get("tiger","")}')
-            while len(nxt)<3: nxt.append('-')
-            self.report_tree.insert('', 'end', values=(r.get('sno',''),' | '.join(prev) if prev else '-',f'{r.get("result","")} {p}',nxt[0],nxt[1],nxt[2]),tags=(self.tag_for(r.get('result','D')),))
+            while len(nxt)<6: nxt.append('-')
+            self.report_tree.insert('', 'end', values=(r.get('sno',''),' | '.join(prev) if prev else '-',f'{r.get("result","")} {p}',nxt[0],nxt[1],nxt[2],nxt[3],nxt[4],nxt[5]),tags=(self.tag_for(r.get('result','D')),))
 
     def import_data(self):
         path=filedialog.askopenfilename(filetypes=[('Excel','*.xlsx'),('CSV','*.csv'),('All files','*.*')])
