@@ -776,54 +776,52 @@ class App:
             d=clean_card(item.get('dragon',''))
             t=clean_card(item.get('tiger',''))
 
-        # Compact visual popup matching the supplied reference:
-        # Dragon label + card on top, Tiger label + card below, trophy beside result.
+        # 60% compact Pair Result popup.
         win=tk.Toplevel(self.root)
         win.title('Pair Result')
-        win.geometry('330x390')
+        win.geometry('198x234')
         win.resizable(False,False)
         win.configure(bg='white')
         try:
             x=self.root.winfo_pointerx()+12; y=self.root.winfo_pointery()+12
-            win.geometry(f'330x390+{x}+{y}')
+            win.geometry(f'198x234+{x}+{y}')
         except Exception:
             pass
 
         tk.Label(win,text='Dragon',bg='white',fg='#111111',
-                 font=('Segoe UI',22,'normal')).pack(pady=(12,2))
-        dcard=tk.Frame(win,bg='white',highlightthickness=2,highlightbackground='#ffe600')
-        dcard.pack(pady=(0,2))
+                 font=('Segoe UI',13,'normal')).pack(pady=(6,1))
+        dcard=tk.Frame(win,bg='white',highlightthickness=1,highlightbackground='#ffe600')
+        dcard.pack(pady=(0,1))
         tk.Label(dcard,text=d or '-',bg='white',fg='#e11d2e',
-                 font=('Segoe UI',32,'bold'),width=3,height=1).pack(padx=8,pady=2)
+                 font=('Segoe UI',19,'bold'),width=2,height=1).pack(padx=4,pady=1)
         tk.Label(win,text='Tiger',bg='white',fg='#111111',
-                 font=('Segoe UI',22,'normal')).pack(pady=(0,2))
+                 font=('Segoe UI',13,'normal')).pack(pady=(0,1))
 
         lower=tk.Frame(win,bg='white')
-        lower.pack(pady=(0,4))
-        tcard=tk.Frame(lower,bg='white',highlightthickness=2,highlightbackground='#ffe600')
-        tcard.pack(side='left',padx=(0,12))
+        lower.pack(pady=(0,2))
+        tcard=tk.Frame(lower,bg='white',highlightthickness=1,highlightbackground='#ffe600')
+        tcard.pack(side='left',padx=(0,6))
         tk.Label(tcard,text=t or '-',bg='white',fg='#111111',
-                 font=('Segoe UI',32,'bold'),width=3,height=1).pack(padx=8,pady=2)
+                 font=('Segoe UI',19,'bold'),width=2,height=1).pack(padx=4,pady=1)
 
-        trophy=tk.Canvas(lower,width=88,height=88,bg='white',highlightthickness=0)
+        trophy=tk.Canvas(lower,width=53,height=53,bg='white',highlightthickness=0)
         trophy.pack(side='left')
-        trophy.create_oval(3,3,85,85,fill='#eef2e8',outline='')
-        # Simple green trophy icon drawn with canvas primitives.
-        trophy.create_rectangle(31,25,57,57,fill='#16a34a',outline='')
-        trophy.create_arc(20,22,38,49,start=90,extent=180,style='arc',outline='#16a34a',width=8)
-        trophy.create_arc(50,22,68,49,start=-90,extent=180,style='arc',outline='#16a34a',width=8)
-        trophy.create_rectangle(27,55,61,61,fill='#16a34a',outline='')
-        trophy.create_rectangle(39,61,49,69,fill='#16a34a',outline='')
-        trophy.create_rectangle(28,69,60,74,fill='#16a34a',outline='')
-        trophy.create_text(44,45,text='★',fill='white',font=('Segoe UI',11,'bold'))
+        trophy.create_oval(2,2,51,51,fill='#eef2e8',outline='')
+        trophy.create_rectangle(19,15,34,34,fill='#16a34a',outline='')
+        trophy.create_arc(12,13,23,30,start=90,extent=180,style='arc',outline='#16a34a',width=5)
+        trophy.create_arc(30,13,41,30,start=-90,extent=180,style='arc',outline='#16a34a',width=5)
+        trophy.create_rectangle(16,33,37,37,fill='#16a34a',outline='')
+        trophy.create_rectangle(23,37,30,42,fill='#16a34a',outline='')
+        trophy.create_rectangle(17,42,36,45,fill='#16a34a',outline='')
+        trophy.create_text(27,27,text='★',fill='white',font=('Segoe UI',7,'bold'))
 
         result_color=RESULT_COLORS.get(pred,'#7c3aed')
         tk.Label(win,text=f'Result: {pred}',bg='white',fg=result_color,
-                 font=('Segoe UI',12,'bold')).pack(pady=(2,2))
-        tk.Label(win,text=f'Dragon {self.oe(d) if d else "-"}   |   Tiger {self.oe(t) if t else "-"}',
-                 bg='white',fg='#475569',font=('Segoe UI',9,'bold')).pack(pady=1)
+                 font=('Segoe UI',8,'bold')).pack(pady=(1,1))
+        tk.Label(win,text=f'Dragon {self.oe(d) if d else "-"} | Tiger {self.oe(t) if t else "-"}',
+                 bg='white',fg='#475569',font=('Segoe UI',6,'bold')).pack(pady=1)
         tk.Button(win,text='CLOSE',command=win.destroy,bg='#0758d9',fg='white',
-                  font=('Segoe UI',9,'bold'),relief='groove',bd=1,padx=12,pady=4).pack(pady=6)
+                  font=('Segoe UI',7,'bold'),relief='groove',bd=1,padx=7,pady=2).pack(pady=2)
         win.transient(self.root)
         win.lift()
 
