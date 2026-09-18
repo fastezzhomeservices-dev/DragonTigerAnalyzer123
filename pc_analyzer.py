@@ -58,8 +58,9 @@ class App:
         self.bg_photo = None
         self.load_settings()
         self.build_styles()
-        self.build_ui()
+        # Create the background canvas before all UI widgets so no widget-level lower() call is needed.
         self.setup_background()
+        self.build_ui()
         self.refresh()
 
     def load_settings(self):
@@ -84,9 +85,7 @@ class App:
     def setup_background(self):
         self.bg_canvas = tk.Canvas(self.root, highlightthickness=0, bd=0)
         self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
-        # Canvas.lower() is overridden by Tkinter Canvas item API and requires a tag/id.
-        # Lower the widget itself using the Tcl widget stacking command.
-        self.root.tk.call('lower', self.bg_canvas._w)
+        # Background canvas is created before the other UI widgets, so it naturally stays behind them.
         self.root.bind('<Configure>', self._resize_background)
         self.apply_theme(self.theme_name, save=False)
 
