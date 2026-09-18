@@ -8,6 +8,8 @@ import html
 import os
 import json
 import shutil
+import webbrowser
+import threading
 from PIL import Image, ImageTk
 
 CARDS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
@@ -56,6 +58,9 @@ class App:
         self.theme_name = 'Midnight Blue'
         self.background_path = ''
         self.bg_photo = None
+        self.live_url = 'https://games.evolution.com/live-casino/dragon-tiger/'
+        self.live_open = False
+        self.live_window = None
         self.load_settings()
         self.build_styles()
         # Create the background canvas before all UI widgets so no widget-level lower() call is needed.
@@ -236,7 +241,7 @@ class App:
         tk.Label(header,text='PC ANALYZER',bg='#7f1d1d',fg='#fde68a',font=('Segoe UI',15,'bold')).pack(side='right',padx=20)
 
         tools = tk.Frame(self.root,bg='#111827'); tools.pack(fill='x',padx=18,pady=(11,4))
-        for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),('THEME / BACKGROUND',self.open_theme_settings)]:
+        for text,cmd in [('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),('LIVE DRAGON TIGER',self.open_live_browser),('THEME / BACKGROUND',self.open_theme_settings)]:
             tk.Button(tools,text=text,command=cmd,bg='#374151',fg='white',activebackground='#4b5563',activeforeground='white',font=('Segoe UI',10,'bold'),relief='flat',padx=11,pady=7).pack(side='left',padx=4)
         tk.Label(tools,text='Historical statistical reference only',bg='#111827',fg='#9ca3af',font=('Segoe UI',9)).pack(side='right',padx=10)
 
@@ -293,6 +298,55 @@ class App:
         self.last_frame.pack_propagate(False)
         self.last_analysis = tk.StringVar(value='LAST RESULT ANALYSIS | Import rounds to see previous history, card numbers and next historical rounds')
         tk.Label(last,textvariable=self.last_analysis,bg='#111827',fg='#fde68a',font=('Segoe UI',9,'bold'),anchor='w').pack(fill='x',padx=10,pady=(0,5))
+
+    def open_live_browser(self):
+        """Open a live Dragon Tiger webpage in a real Edge/WebView window positioned beside the analyzer."""
+        url = self.live_url
+        if self.live_open:
+            self.status.set('LIVE DRAGON TIGER browser is already open.')
+            return
+
+        try:
+            import webview
+        except Exception:
+            webbrowser.open(url)
+            self.status.set('LIVE browser opened in the default Windows browser.')
+            return
+
+        try:
+            self.root.update_idletasks()
+            x = max(0, self.root.winfo_x() + self.root.winfo_width() + 8)
+            y = max(0, self.root.winfo_y())
+            w = max(560, min(760, self.root.winfo_width()))
+            h = max(650, self.root.winfo_height())
+        except Exception:
+            x, y, w, h = 100, 80, 700, 720
+
+        self.live_open = True
+        self.status.set('Opening LIVE DRAGON TIGER browser beside the analyzer...')
+
+        def run_webview():
+            try:
+                self.live_window = webview.create_window(
+                    'LIVE DRAGON TIGER',
+                    url=url,
+                    x=x, y=y, width=w, height=h,
+                    resizable=True, min_size=(520, 600)
+                )
+                webview.start(gui='edgechromium', debug=False)
+            except Exception:
+                self.live_open = False
+                self.live_window = None
+                try:
+                    self.root.after(0, lambda: self.status.set('Embedded live browser unavailable; opened default browser.'))
+                    webbrowser.open(url)
+                except Exception:
+                    pass
+            finally:
+                self.live_open = False
+                self.live_window = None
+
+        threading.Thread(target=run_webview, daemon=True).start()
 
     def oe(self,c): return 'ODD' if c in ODD else 'EVEN'
     def tag_for(self,r): return {'D':'dragon','T':'tiger','TIE':'tie'}[r]
