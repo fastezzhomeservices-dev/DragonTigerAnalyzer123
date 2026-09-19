@@ -715,38 +715,100 @@ class App:
         c=Counter(r.get('result') for r in self.data)
         self.summary.set(f'PAIR {self.pair.get().upper()} | D {c["D"]} | T {c["T"]} | TIE {c["TIE"]} | TOTAL {len(self.data)}')
 
+    def pair_search_reference_prediction(self, pair_rows):
+        # Use the last 4-5 Pair Search references as a D/T pattern.
+        refs=[]
+        for item in self.pair_history[-5:]:
+            seq=[normalize_result(x) for x in item.get('sequence',[]) if normalize_result(x) in ('D','T')]
+            if seq:
+                refs.append(seq[-1])
+        if len(refs)<4:
+            return None,0.0
+        pattern=refs[-5:]
+        seq=[normalize_result(r.get('result')) for r in self.data]
+        scores=Counter()
+        for n in (len(pattern),4):
+            if len(pattern)<n:
+                continue
+            pat=pattern[-n:]
+            for i in range(len(seq)-n):
+                if seq[i:i+n]==pat and i+n<len(seq):
+                    nxt=seq[i+n]
+                    if nxt in ('D','T'):
+                        scores[nxt]+=n*n
+        if not scores:
+            return None,0.0
+        total=sum(scores.values())
+        probs={x:scores[x]/total for x in ('D','T')}
+        pred=max(('D','T'),key=lambda x:probs[x])
+        return pred,probs[pred]*100
+
     def pattern_prediction(self, pair_rows):
         pair_cnt=Counter(r.get('result') for r in pair_rows if r.get('result') in ('D','T'))
         pair_total=sum(pair_cnt.values())
         pair_prob={r:(pair_cnt[r]+1)/(pair_total+2) for r in ('D','T')}
+
+        # Pair-specific 4-8 result pattern from the searched pair's own history.
+        pair_seq=[normalize_result(r.get('result')) for r in pair_rows
+                  if normalize_result(r.get('result')) in ('D','T')]
+        pair_scores=Counter()
+        for n in range(min(8,len(pair_seq)),3,-1):
+            pattern=pair_seq[-n:]
+            for i in range(len(pair_seq)-n):
+                if pair_seq[i:i+n]==pattern:
+                    nxt=pair_seq[i+n]
+                    if nxt in ('D','T'):
+                        pair_scores[nxt]+=n*n
+
+        pair_pattern_prob={r:0.5 for r in ('D','T')}
+        if pair_scores:
+            total=sum(pair_scores.values())
+            pair_pattern_prob={r:pair_scores[r]/total for r in ('D','T')}
+
+        # Global D/T sequence pattern remains as the fallback/reference signal.
         seq=[normalize_result(r.get('result')) for r in self.data]
         segments=[]; cur=[]
         for res in seq:
-            if res in ('D','T'): cur.append(res)
+            if res in ('D','T'):
+                cur.append(res)
             else:
                 if cur: segments.append(cur); cur=[]
         if cur: segments.append(cur)
         context=segments[-1][-8:] if segments else []
-        if len(context)<4:
-            pred=max(('D','T'),key=lambda r:pair_prob[r])
-            return pred,pair_prob[pred]*100
-        scores=Counter()
-        for n in range(8,3,-1):
-            if len(context)<n: continue
-            pattern=context[-n:]; follows=Counter()
-            for seg in segments:
-                if len(seg)<=n: continue
-                for i in range(len(seg)-n):
-                    if seg[i:i+n]==pattern: follows[seg[i+n]]+=1
-            if not follows: continue
-            weight=n*n
-            for result,count in follows.items(): scores[result]+=weight*count
-        if not scores:
-            pred=max(('D','T'),key=lambda r:pair_prob[r])
-            return pred,pair_prob[pred]*100
-        total=sum(scores.values())
-        pattern_prob={r:scores[r]/total for r in ('D','T')}
-        final={r:(0.65*pattern_prob[r])+(0.35*pair_prob[r]) for r in ('D','T')}
+
+        global_prob={r:pair_prob[r] for r in ('D','T')}
+        if len(context)>=4:
+            scores=Counter()
+            for n in range(8,3,-1):
+                if len(context)<n: continue
+                pattern=context[-n:]; follows=Counter()
+                for seg in segments:
+                    if len(seg)<=n: continue
+                    for i in range(len(seg)-n):
+                        if seg[i:i+n]==pattern:
+                            nxt=seg[i+n]
+                            if nxt in ('D','T'):
+                                follows[nxt]+=1
+                weight=n*n
+                for result,count in follows.items():
+                    scores[result]+=weight*count
+            if scores:
+                total=sum(scores.values())
+                global_pattern={r:scores[r]/total for r in ('D','T')}
+                global_prob={r:(0.65*global_pattern[r])+(0.35*pair_prob[r]) for r in ('D','T')}
+
+        # Pair-search reference pattern gets the strongest weight once 4-5
+        # Pair searches are available; otherwise use pair + global pattern.
+        ref_pred,ref_pct=self.pair_search_reference_prediction(pair_rows)
+        if ref_pred:
+            final={r:(0.50*(1.0 if r==ref_pred else 0.0))+
+                     (0.30*pair_pattern_prob[r])+
+                     (0.20*global_prob[r]) for r in ('D','T')}
+        elif pair_scores:
+            final={r:(0.55*pair_pattern_prob[r])+(0.45*global_prob[r]) for r in ('D','T')}
+        else:
+            final=global_prob
+
         pred=max(('D','T'),key=lambda r:final[r])
         return pred,final[pred]*100
 
