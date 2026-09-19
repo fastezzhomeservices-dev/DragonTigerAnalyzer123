@@ -381,20 +381,21 @@ class App:
         search_row.pack(fill='x',padx=8,pady=(3,0))
         search_row.pack_propagate(False)
 
-        self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=54)
-        self.pair_history_frame.pack(side='left',fill='both',expand=True)
-        self.pair_history_frame.pack_propagate(False)
-        self.render_pair_history()
-
-        self.top_next_frame=tk.Frame(search_row,bg='#0758d9',width=300,height=54,
+        # Reserve the TOP 4 column first so it can never be squeezed out by the 15 history circles.
+        self.top_next_frame=tk.Frame(search_row,bg='#0758d9',width=360,height=54,
                                      highlightthickness=1,highlightbackground='#00a8ff')
         self.top_next_frame.pack(side='right',fill='y',padx=(8,0))
         self.top_next_frame.pack_propagate(False)
-        tk.Label(self.top_next_frame,text='TOP 4 NEXT PATTI',bg='#0758d9',fg='white',
-                 font=('Segoe UI',9,'bold')).pack(anchor='w',padx=8,pady=(5,0))
+        tk.Label(self.top_next_frame,text='TOP 4 NEXT PATTI  |  ALL DATA',bg='#0758d9',fg='white',
+                 font=('Segoe UI',9,'bold')).pack(anchor='w',padx=8,pady=(4,0))
         self.top_next_label=tk.Label(self.top_next_frame,text='-',bg='#0758d9',fg='white',
-                                     font=('Segoe UI',10,'bold'),anchor='w')
+                                     font=('Segoe UI',10,'bold'),anchor='w',justify='left')
         self.top_next_label.pack(fill='x',padx=8,pady=(1,0))
+
+        self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=54,width=760)
+        self.pair_history_frame.pack(side='left',fill='y',expand=False)
+        self.pair_history_frame.pack_propagate(False)
+        self.render_pair_history()
 
         # Frequency chart
         chart_box=tk.LabelFrame(content,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg=PANEL,fg=YELLOW,
@@ -989,11 +990,10 @@ class App:
             d=clean_card(item.get('dragon',''))
             t=clean_card(item.get('tiger',''))
 
-        # Pair Result popup: DELETE RESULT is placed directly under EDIT/SAVE.
-        # Use a compact fixed height and keep the whole window inside the screen.
+        # Pair Result popup: keep EDIT, SAVE and DELETE RESULT visible together.
         win=tk.Toplevel(self.root)
         win.title('Pair Result')
-        win.geometry('250x330')
+        win.geometry('260x430')
         win.resizable(False,False)
         win.configure(bg='white')
         try:
@@ -1001,9 +1001,9 @@ class App:
             y=self.root.winfo_pointery()+12
             screen_w=self.root.winfo_screenwidth()
             screen_h=self.root.winfo_screenheight()
-            x=min(x, max(10, screen_w-260))
-            y=min(y, max(10, screen_h-345))
-            win.geometry(f'250x330+{x}+{y}')
+            x=min(x, max(10, screen_w-270))
+            y=min(y, max(10, screen_h-445))
+            win.geometry(f'260x430+{x}+{y}')
         except Exception:
             pass
 
@@ -1079,15 +1079,17 @@ class App:
             except Exception as e:
                 messagebox.showerror('Delete Result',str(e))
 
+        # Large red DELETE RESULT button — deliberately placed before CLOSE and kept in view.
         delete_btn=tk.Button(win,text='DELETE RESULT',command=delete_this_result,bg='#b91c1c',fg='white',
                   activebackground='#dc2626',activeforeground='white',
-                  font=('Segoe UI',10,'bold'),relief='groove',bd=1,padx=18,pady=6)
-        delete_btn.pack(fill='x',padx=18,pady=(5,4))
+                  font=('Segoe UI',11,'bold'),relief='groove',bd=1,padx=18,pady=8)
+        delete_btn.pack(fill='x',padx=18,pady=(8,6))
         tk.Button(win,text='CLOSE',command=win.destroy,bg='#0758d9',fg='white',
                   activebackground='#0b78ff',activeforeground='white',
-                  font=('Segoe UI',9,'bold'),relief='groove',bd=1,padx=12,pady=4).pack(pady=2)
+                  font=('Segoe UI',10,'bold'),relief='groove',bd=1,padx=12,pady=6).pack(pady=2)
         win.transient(self.root)
         win.lift()
+        win.update_idletasks()
 
     def render_pair_history(self):
         if not hasattr(self,'pair_history_frame'): return
