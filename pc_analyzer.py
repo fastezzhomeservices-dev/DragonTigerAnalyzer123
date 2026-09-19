@@ -336,21 +336,9 @@ class App:
                       activeforeground='white',font=('Segoe UI',9,'bold'),relief='groove',bd=1,
                       padx=8,pady=5).pack(side='left',padx=4)
 
-        # Scrollable dashboard area: header and navigation stay fixed; lower sections can scroll.
-        scroll_shell=tk.Frame(self.root,bg=BG)
-        scroll_shell.pack(fill='both',expand=True,padx=0,pady=0)
-        scroll_canvas=tk.Canvas(scroll_shell,bg=BG,highlightthickness=0)
-        scroll_bar=ttk.Scrollbar(scroll_shell,orient='vertical',command=scroll_canvas.yview)
-        scroll_canvas.configure(yscrollcommand=scroll_bar.set)
-        scroll_bar.pack(side='right',fill='y')
-        scroll_canvas.pack(side='left',fill='both',expand=True)
-        content=tk.Frame(scroll_canvas,bg=BG)
-        content_window=scroll_canvas.create_window((0,0),window=content,anchor='nw')
-        content.bind('<Configure>',lambda e: scroll_canvas.configure(scrollregion=scroll_canvas.bbox('all')))
-        scroll_canvas.bind('<Configure>',lambda e: scroll_canvas.itemconfigure(content_window,width=e.width))
-        def _wheel(event):
-            scroll_canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
-        scroll_canvas.bind_all('<MouseWheel>',_wheel)
+        # Fixed dashboard area — no page scrollbar. All main sections stay fixed on screen.
+        content=tk.Frame(self.root,bg=BG)
+        content.pack(fill='both',expand=True,padx=0,pady=0)
 
         # Mandatory Pair Reference / Statistical Prediction row
         refbar=tk.Frame(content,bg=PANEL,highlightthickness=1,highlightbackground=BORDER,height=58)
@@ -864,15 +852,15 @@ class App:
             d=clean_card(item.get('dragon',''))
             t=clean_card(item.get('tiger',''))
 
-        # 60% compact Pair Result popup.
+        # Compact Pair Result popup with enough height for DELETE RESULT and CLOSE.
         win=tk.Toplevel(self.root)
         win.title('Pair Result')
-        win.geometry('198x252')
+        win.geometry('220x310')
         win.resizable(False,False)
         win.configure(bg='white')
         try:
             x=self.root.winfo_pointerx()+12; y=self.root.winfo_pointery()+12
-            win.geometry(f'198x234+{x}+{y}')
+            win.geometry(f'220x310+{x}+{y}')
         except Exception:
             pass
 
@@ -924,9 +912,11 @@ class App:
                 messagebox.showerror('Delete Result',str(e))
 
         tk.Button(win,text='DELETE RESULT',command=delete_this_result,bg='#b91c1c',fg='white',
-                  font=('Segoe UI',7,'bold'),relief='groove',bd=1,padx=7,pady=2).pack(pady=(1,2))
+                  activebackground='#dc2626',activeforeground='white',
+                  font=('Segoe UI',9,'bold'),relief='groove',bd=1,padx=12,pady=4).pack(pady=(4,3))
         tk.Button(win,text='CLOSE',command=win.destroy,bg='#0758d9',fg='white',
-                  font=('Segoe UI',7,'bold'),relief='groove',bd=1,padx=7,pady=2).pack(pady=1)
+                  activebackground='#0b78ff',activeforeground='white',
+                  font=('Segoe UI',9,'bold'),relief='groove',bd=1,padx=12,pady=4).pack(pady=2)
         win.transient(self.root)
         win.lift()
 
