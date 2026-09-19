@@ -1209,6 +1209,13 @@ class App:
         if not rows:
             tk.Label(self.chart_frame,text='No matching pair history',bg='#111827',fg='#9ca3af').pack(pady=25)
             return
+        if top_next:
+            next_text='  |  '.join(f'{card} ({cnt})' for card,cnt in top_next)
+        else:
+            next_text='-'
+        tk.Label(self.chart_frame,text=f'TOP 4 NEXT PATTI: {next_text}',
+                 bg='#0758d9',fg='white',font=('Segoe UI',9,'bold'),
+                 padx=8,pady=3).pack(fill='x',pady=(0,4))
         counts=Counter()
         for r in rows:
             d,t=r.get('dragon',''),r.get('tiger','')
@@ -1216,6 +1223,20 @@ class App:
             if t: counts[(t,'T')]+=1
         top=sorted(counts.items(),key=lambda x:(-x[1],x[0][0],x[0][1]))[:13]
         maxv=max(v for _,v in top) or 1
+
+        # TOP 4 NEXT PATTI: after every occurrence of the searched pair,
+        # count the Dragon/Tiger cards from the immediately following round.
+        next_counts=Counter()
+        for idx,r in enumerate(self.data[:-1]):
+            if r.get('dragon','')+r.get('tiger','') != self.pair.get().upper().strip():
+                continue
+            nxt=self.data[idx+1]
+            nd=clean_card(nxt.get('dragon','')); nt=clean_card(nxt.get('tiger',''))
+            if nd: next_counts[nd]+=1
+            if nt: next_counts[nt]+=1
+        top_next=[(card,cnt) for card,cnt in sorted(
+            next_counts.items(), key=lambda x:(-x[1], CARDS.index(x[0]) if x[0] in CARDS else 99)
+        )[:4]]
         for (num,side),v in top:
             row=tk.Frame(self.chart_frame,bg='#111827'); row.pack(fill='x',pady=2)
             tk.Label(row,text=f'{num}  {side}',bg='#14532d' if side=='D' else '#92400e',fg='white',width=7,font=('Segoe UI',9,'bold')).pack(side='left')
