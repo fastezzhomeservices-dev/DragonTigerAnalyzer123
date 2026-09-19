@@ -1241,13 +1241,17 @@ class App:
         top=sorted(counts.items(),key=lambda x:(-x[1],x[0][0],x[0][1]))[:13]
         maxv=max(v for _,v in top) or 1
 
-        # TOP 4 NEXT PATTI: after every occurrence of the searched pair,
-        # count the Dragon/Tiger cards from the immediately following round.
+        # TOP 4 NEXT PATTI: search the COMPLETE imported data, not Pair Search history.
+        # For every historical occurrence of the searched pair, count both cards
+        # from the immediately following round.
         next_counts=Counter()
-        for idx,r in enumerate(self.data[:-1]):
-            if r.get('dragon','')+r.get('tiger','') != self.pair.get().upper().strip():
+        search_pair=self.pair.get().upper().strip()
+        all_data=self.data
+        for idx,r in enumerate(all_data[:-1]):
+            current_pair=clean_card(r.get('dragon','')) + clean_card(r.get('tiger',''))
+            if current_pair != search_pair:
                 continue
-            nxt=self.data[idx+1]
+            nxt=all_data[idx+1]
             nd=clean_card(nxt.get('dragon','')); nt=clean_card(nxt.get('tiger',''))
             if nd: next_counts[nd]+=1
             if nt: next_counts[nt]+=1
