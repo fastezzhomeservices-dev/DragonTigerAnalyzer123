@@ -1195,14 +1195,16 @@ class App:
         t=self._theme()
         tk.Label(win,text='PAIR SEARCH HISTORY',bg=t['root'],fg=t['accent'],font=('Segoe UI',14,'bold')).pack(pady=10)
         frame=tk.Frame(win,bg=t['root']); frame.pack(fill='both',expand=True,padx=12,pady=5)
-        cols=('NO','TIME','PAIR','PREDICTION','RESULT SEQUENCE','DELETE')
+        cols=('NO','TIME','PAIR','PREDICTION','RESULT','RESULT SEQUENCE','DELETE')
         tree=ttk.Treeview(frame,columns=cols,show='headings',height=15)
-        widths={'NO':50,'TIME':150,'PAIR':80,'PREDICTION':100,'RESULT SEQUENCE':420,'DELETE':80}
+        widths={'NO':45,'TIME':145,'PAIR':70,'PREDICTION':95,'RESULT':70,'RESULT SEQUENCE':360,'DELETE':80}
         for col in cols: tree.heading(col,text=col); tree.column(col,width=widths[col],anchor='center')
         tree.pack(fill='both',expand=True)
         for i,item in enumerate(reversed(self.pair_history),1):
             seq=' '.join(item.get('sequence',[]))
-            tree.insert('', 'end',iid=str(i-1),values=(i,item.get('time',''),item.get('pair',''),item.get('prediction',''),seq,'DELETE'))
+            normalized_seq=[normalize_result(v) for v in item.get('sequence',[]) if normalize_result(v) in ('D','T','TIE')]
+            actual_result=normalized_seq[-1] if normalized_seq else ''
+            tree.insert('', 'end',iid=str(i-1),values=(i,item.get('time',''),item.get('pair',''),item.get('prediction',''),actual_result,seq,'DELETE'))
         def delete_selected():
             sel=tree.selection()
             if not sel: return
@@ -1213,7 +1215,10 @@ class App:
                 # Rebuild IDs/order after deletion.
                 for x in tree.get_children(): tree.delete(x)
                 for i,item in enumerate(reversed(self.pair_history),1):
-                    tree.insert('', 'end',iid=str(i-1),values=(i,item.get('time',''),item.get('pair',''),item.get('prediction',''),' '.join(item.get('sequence',[])),'DELETE'))
+                    seq=' '.join(item.get('sequence',[]))
+                    normalized_seq=[normalize_result(v) for v in item.get('sequence',[]) if normalize_result(v) in ('D','T','TIE')]
+                    actual_result=normalized_seq[-1] if normalized_seq else ''
+                    tree.insert('', 'end',iid=str(i-1),values=(i,item.get('time',''),item.get('pair',''),item.get('prediction',''),actual_result,seq,'DELETE'))
         tk.Button(win,text='DELETE SELECTED',command=delete_selected,bg='#b91c1c',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='left',padx=12,pady=8)
         tk.Button(win,text='DOWNLOAD HISTORY',command=self.download_history,bg='#374151',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='right',padx=12,pady=8)
 
