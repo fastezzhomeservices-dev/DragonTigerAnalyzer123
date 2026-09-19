@@ -785,7 +785,8 @@ class App:
         parts=[p.strip() for p in value.split('|')]
         cursor=x+6
         for n,part in enumerate(parts):
-            m=re.match(r'^(D|T|TIE)\s*(.*)
+            m=re.match(r'^(D|T|TIE)\s*(.*)$',part,re.I)
+            if m:
                 result=normalize_result(m.group(1))
                 rest=m.group(2).strip()
                 cursor=self._report_circle(cv,cursor,y+(height-20)/2,result,20)+5
