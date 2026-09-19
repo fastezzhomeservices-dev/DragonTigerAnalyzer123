@@ -296,29 +296,11 @@ class App:
         logo.create_arc(7,29,75,75,start=150,extent=190,style='arc',outline='#111827',width=1)
         logo.create_oval(24,25,58,59,fill='white',outline='#111827',width=2)
 
+        # Minimal top header: FASTEZZ only.
         brand=tk.Frame(header,bg='#06183a')
-        brand.pack(side='left',fill='y')
-        tk.Label(brand,text='FASTEZZ',bg='#06183a',fg='white',font=('Segoe UI',23,'bold')).pack(anchor='w',pady=(4,0))
-        tk.Label(brand,text='SERVICES',bg='#06183a',fg='#ffe000',font=('Segoe UI',28,'bold')).pack(anchor='w',pady=(0,0))
-        sep=tk.Frame(header,bg='white',width=2); sep.pack(side='left',fill='y',pady=14,padx=8)
-        contact=tk.Frame(header,bg='#06183a'); contact.pack(side='left',fill='y',pady=8)
-        wa_icon=tk.Canvas(contact,width=48,height=48,bg='#06183a',highlightthickness=0)
-        wa_icon.pack(side='left',padx=(0,8),pady=(3,0))
-        wa_icon.create_oval(2,2,46,46,fill='#25D366',outline='white',width=2)
-        wa_icon.create_text(24,24,text='☎',fill='white',font=('Segoe UI',22,'bold'))
-        wa_text=tk.Frame(contact,bg='#06183a')
-        wa_text.pack(side='left',fill='y')
-        tk.Label(wa_text,text='WhatsApp Business',bg='#06183a',fg='#25D366',font=('Segoe UI',12,'bold')).pack(anchor='w',pady=(2,0))
-        tk.Label(wa_text,text='Chat Now',bg='#06183a',fg='white',font=('Segoe UI',8,'bold')).pack(anchor='w')
-        tk.Label(contact,text='https://wa.me/91XXXXXXXXXX',bg='#06183a',fg='#25D366',
-                 font=('Segoe UI',8,'bold')).pack(side='left',padx=(6,0),pady=(22,0))
-        tk.Button(contact,text='CONTACT US',command=self.open_contact_us,bg='#06183a',fg=YELLOW,
-                  activebackground='#0b72ff',activeforeground='white',font=('Segoe UI',12,'bold'),
-                  relief='groove',bd=1,padx=16,pady=4).pack(anchor='w',pady=(4,0))
-
-        ver=tk.Label(header,text='PC ANALYZER v2.0  |  Developed by  SK SINGH',bg='#06183a',fg=YELLOW,font=('Segoe UI',12,'bold'),
-                     relief='groove',bd=1,padx=10,pady=5)
-        ver.pack(side='right',padx=6)
+        brand.pack(side='left',fill='both',expand=True)
+        tk.Label(brand,text='FASTEZZ',bg='#06183a',fg='white',
+                 font=('Segoe UI',30,'bold')).pack(anchor='w',padx=14,pady=(18,0))
 
         # Navigation
         nav=tk.Frame(self.root,bg=BG); nav.pack(fill='x',padx=18,pady=(4,3))
