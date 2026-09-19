@@ -758,13 +758,11 @@ class App:
         return pred,probs[pred]*100
 
     def pattern_prediction(self, pair_rows):
-        # BALANCED PREDICTION FORMULA:
-        # 1) Do NOT blindly repeat the Pair majority.
-        # 2) Use the searched Pair's historical D/T sequence and its transitions.
-        # 3) Use the last 4-5 Pair Search references only as a secondary context signal.
-        # 4) Card history and global pattern are fallback/reference signals.
-        # TIE is excluded from D/T calculations.
-
+        # PRIMARY FORMULA: LAST 4-5 PAIR SEARCH REFERENCES -> EXACT D/T PATTERN.
+        # The latest search itself is excluded. Each older Pair Search contributes
+        # its latest real D/T result. The resulting 4-5 sequence is searched in
+        # the complete imported result history and the NEXT result is used.
+        # TIE never enters a D/T pattern.
         pair_cnt=Counter(
             normalize_result(r.get('result'))
             for r in pair_rows
@@ -773,34 +771,7 @@ class App:
         pair_total=sum(pair_cnt.values())
         pair_prob={r:(pair_cnt[r]+1)/(pair_total+2) for r in ('D','T')}
 
-        pair_seq=[
-            normalize_result(r.get('result'))
-            for r in pair_rows
-            if normalize_result(r.get('result')) in ('D','T')
-        ]
-
-        # Historical transition/pattern signal from the same Pair.
-        # Longer matching patterns receive more weight, but only real
-        # historical continuations are counted.
-        pair_pattern_scores=Counter()
-        for n in range(min(6,len(pair_seq)),1,-1):
-            pat=pair_seq[-n:]
-            for i in range(len(pair_seq)-n):
-                if pair_seq[i:i+n]==pat:
-                    nxt=pair_seq[i+n]
-                    if nxt in ('D','T'):
-                        pair_pattern_scores[nxt]+=n*n
-
-        pair_pattern_prob={r:pair_prob[r] for r in ('D','T')}
-        if pair_pattern_scores:
-            total=sum(pair_pattern_scores.values())
-            pair_pattern_prob={r:pair_pattern_scores[r]/total for r in ('D','T')}
-
-        # Pair Search reference signal.
-        # The current search is excluded to prevent leakage. Each older
-        # search contributes its latest known D/T result. If all references
-        # are identical, they are treated as stale context and kept weak.
-        ref_scores=Counter()
+        # 1) Build the reference pattern from the previous Pair Search records.
         old_history=self.pair_history[:-1] if self.pair_history else []
         refs=[]
         for item in old_history[-5:]:
@@ -810,28 +781,63 @@ class App:
             ]
             if seq_ref:
                 refs.append(seq_ref[-1])
-        for v in refs:
-            ref_scores[v]+=1
-        ref_prob={r:0.5 for r in ('D','T')}
-        ref_strength=0.0
-        if ref_scores:
-            total=sum(ref_scores.values())
-            ref_prob={r:ref_scores[r]/total for r in ('D','T')}
-            # Repeated identical saved references are stale, not independent
-            # evidence. Give them only a small contribution.
-            if len(set(refs)) == 1:
-                ref_strength=0.03
-            else:
-                ref_strength=0.15
 
-        # Card-level historical fallback.
+        # 2) Search the exact 5-reference pattern first; if unavailable,
+        # fall back to the last 4 references. Longer exact matches win.
+        reference_scores=Counter()
+        reference_matches=0
+        for n in (5,4):
+            if len(refs)<n:
+                continue
+            pat=refs[-n:]
+            for i in range(len(self.data)-n):
+                hist=[]
+                for j in range(i,i+n):
+                    rr=normalize_result(self.data[j].get('result'))
+                    if rr not in ('D','T'):
+                        break
+                    hist.append(rr)
+                if len(hist)!=n or hist!=pat:
+                    continue
+                nxt=normalize_result(self.data[i+n].get('result'))
+                if nxt in ('D','T'):
+                    # Exact 5-pattern is stronger than exact 4-pattern.
+                    reference_scores[nxt]+=n*n
+                    reference_matches+=1
+            if reference_scores:
+                break
+
+        reference_prob=None
+        if reference_scores:
+            total=sum(reference_scores.values())
+            reference_prob={r:reference_scores[r]/total for r in ('D','T')}
+
+        # 3) Same-Pair transition pattern, using the current searched pair only.
+        pair_seq=[
+            normalize_result(r.get('result'))
+            for r in pair_rows
+            if normalize_result(r.get('result')) in ('D','T')
+        ]
+        pair_pattern_scores=Counter()
+        for n in range(min(6,len(pair_seq)),1,-1):
+            pat=pair_seq[-n:]
+            for i in range(len(pair_seq)-n):
+                if pair_seq[i:i+n]==pat:
+                    nxt=pair_seq[i+n]
+                    if nxt in ('D','T'):
+                        pair_pattern_scores[nxt]+=n*n
+        if pair_pattern_scores:
+            total=sum(pair_pattern_scores.values())
+            pair_pattern_prob={r:pair_pattern_scores[r]/total for r in ('D','T')}
+        else:
+            pair_pattern_prob=pair_prob
+
+        # 4) Card-level historical signal for the searched Pair.
         search_pair=str(self.pair.get() or '').strip().upper()
         if search_pair.startswith('10') and len(search_pair)>=3:
-            search_d='10'
-            search_t=search_pair[2:]
+            search_d='10'; search_t=search_pair[2:]
         else:
-            search_d=search_pair[:1]
-            search_t=search_pair[1:]
+            search_d=search_pair[:1]; search_t=search_pair[1:]
 
         card_scores=Counter()
         card_total=0
@@ -839,83 +845,64 @@ class App:
             res=normalize_result(row.get('result'))
             if res not in ('D','T'):
                 continue
-            d=clean_card(row.get('dragon',''))
-            t=clean_card(row.get('tiger',''))
+            d=clean_card(row.get('dragon','')); t=clean_card(row.get('tiger',''))
             matched=False
             if search_d and d==search_d:
-                card_scores[res]+=1
-                card_total+=1
-                matched=True
+                card_scores[res]+=1; card_total+=1; matched=True
             if search_t and t==search_t and (not matched or t!=search_d):
-                card_scores[res]+=1
-                card_total+=1
+                card_scores[res]+=1; card_total+=1
         card_prob={r:(card_scores[r]+1)/(card_total+2) for r in ('D','T')}
 
-        # Global pattern fallback.
+        # 5) Global recent-pattern fallback.
         seq=[normalize_result(r.get('result')) for r in self.data]
-        segments=[]; cur=[]
-        for res in seq:
-            if res in ('D','T'):
-                cur.append(res)
-            else:
-                if cur:
-                    segments.append(cur)
-                    cur=[]
-        if cur:
-            segments.append(cur)
-
-        global_prob=card_prob if card_total else pair_prob
-        context=segments[-1][-6:] if segments else []
         global_scores=Counter()
-        for n in range(min(6,len(context)),1,-1):
-            pat=context[-n:]
-            for seg in segments:
-                for i in range(len(seg)-n):
-                    if seg[i:i+n]==pat:
-                        nxt=seg[i+n]
-                        if nxt in ('D','T'):
-                            global_scores[nxt]+=n*n
+        for n in range(min(6,len(seq)),1,-1):
+            pat=seq[-n:]
+            if len(pat)!=n or any(x not in ('D','T') for x in pat):
+                continue
+            for i in range(len(seq)-n):
+                if seq[i:i+n]==pat:
+                    nxt=seq[i+n]
+                    if nxt in ('D','T'):
+                        global_scores[nxt]+=n*n
+        global_prob=card_prob if card_total else pair_prob
         if global_scores:
             total=sum(global_scores.values())
-            global_pattern={r:global_scores[r]/total for r in ('D','T')}
-            global_prob={r:(0.70*global_pattern[r])+(0.30*global_prob[r]) for r in ('D','T')}
+            gp={r:global_scores[r]/total for r in ('D','T')}
+            global_prob={r:0.70*gp[r]+0.30*global_prob[r] for r in ('D','T')}
 
-        # Final scoring:
-        # Pair majority is important, but it no longer gets an 85% lock.
-        # A strong same-Pair pattern can therefore change a repetitive result.
-        if pair_total >= 3:
-            d=pair_cnt['D']; t=pair_cnt['T']
-            dominant=max(d,t)/pair_total
-            pattern_strength=max(pair_pattern_prob.values())
-            if pair_pattern_scores and pattern_strength >= 0.60:
-                final={r:(0.35*pair_prob[r])+
-                         (0.55*pair_pattern_prob[r])+
-                         (0.10*global_prob[r]) for r in ('D','T')}
-            elif dominant >= 0.60:
-                final={r:(0.55*pair_prob[r])+
-                         (0.30*pair_pattern_prob[r])+
-                         (0.10*global_prob[r])+
-                         (ref_strength*ref_prob[r]) for r in ('D','T')}
-            else:
-                final={r:(0.40*pair_prob[r])+
-                         (0.40*pair_pattern_prob[r])+
-                         (0.10*global_prob[r])+
-                         (ref_strength*ref_prob[r]) for r in ('D','T')}
-        elif pair_total > 0:
-            final={r:(0.45*pair_prob[r])+
-                     (0.35*pair_pattern_prob[r])+
-                     (0.15*global_prob[r])+
-                     (ref_strength*ref_prob[r]) for r in ('D','T')}
-        elif card_total > 0:
-            final={r:(0.70*card_prob[r])+
-                     (0.20*global_prob[r])+
-                     (ref_strength*ref_prob[r]) for r in ('D','T')}
+        # FINAL:
+        # Exact 5/4 Pair-Search reference pattern is PRIMARY when available.
+        # This prevents a same-Pair majority from simply repeating itself.
+        if reference_prob is not None:
+            final={
+                r:(0.65*reference_prob[r])+
+                  (0.20*pair_pattern_prob[r])+
+                  (0.10*pair_prob[r])+
+                  (0.05*global_prob[r])
+                for r in ('D','T')
+            }
         elif pair_pattern_scores:
-            final=pair_pattern_prob
+            final={
+                r:(0.55*pair_pattern_prob[r])+
+                  (0.25*pair_prob[r])+
+                  (0.15*global_prob[r])+
+                  (0.05*card_prob[r])
+                for r in ('D','T')
+            }
+        elif pair_total:
+            final={
+                r:(0.45*pair_prob[r])+
+                  (0.30*card_prob[r])+
+                  (0.20*global_prob[r])+
+                  (0.05*(reference_prob[r] if reference_prob else 0.5))
+                for r in ('D','T')
+            }
+        elif card_total:
+            final={r:0.75*card_prob[r]+0.25*global_prob[r] for r in ('D','T')}
         else:
-            final=pair_prob
+            final=global_prob
 
-        # Normalize because the optional reference contribution can be small.
         total=sum(final.values()) or 1.0
         final={r:final[r]/total for r in ('D','T')}
         pred=max(('D','T'),key=lambda r:final[r])
