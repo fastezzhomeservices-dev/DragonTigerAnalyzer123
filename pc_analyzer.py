@@ -716,9 +716,11 @@ class App:
         self.summary.set(f'PAIR {self.pair.get().upper()} | D {c["D"]} | T {c["T"]} | TIE {c["TIE"]} | TOTAL {len(self.data)}')
 
     def pair_search_reference_prediction(self, pair_rows):
-        # Use the last 4-5 Pair Search references as a D/T pattern.
+        # Use the previous 4-5 Pair Search references as a D/T pattern.
+        # The current search is excluded so the new prediction cannot leak its own result.
         refs=[]
-        for item in self.pair_history[-5:]:
+        history=self.pair_history[:-1] if self.pair_history else []
+        for item in history[-5:]:
             seq=[normalize_result(x) for x in item.get('sequence',[]) if normalize_result(x) in ('D','T')]
             if seq:
                 refs.append(seq[-1])
@@ -760,12 +762,14 @@ class App:
                     if nxt in ('D','T'):
                         pair_scores[nxt]+=n*n
 
-        pair_pattern_prob={r:0.5 for r in ('D','T')}
+        # When the pair does not yet have a 4-result pattern, use its own
+        # frequency as the pair-pattern signal instead of an arbitrary 50/50.
+        pair_pattern_prob={r:pair_prob[r] for r in ('D','T')}
         if pair_scores:
             total=sum(pair_scores.values())
             pair_pattern_prob={r:pair_scores[r]/total for r in ('D','T')}
 
-        # Global D/T sequence pattern remains as the fallback/reference signal.
+        # Global D/T sequence pattern remains as a secondary reference signal.
         seq=[normalize_result(r.get('result')) for r in self.data]
         segments=[]; cur=[]
         for res in seq:
@@ -797,17 +801,36 @@ class App:
                 global_pattern={r:scores[r]/total for r in ('D','T')}
                 global_prob={r:(0.65*global_pattern[r])+(0.35*pair_prob[r]) for r in ('D','T')}
 
-        # Pair-search reference pattern gets the strongest weight once 4-5
-        # Pair searches are available; otherwise use pair + global pattern.
         ref_pred,ref_pct=self.pair_search_reference_prediction(pair_rows)
-        if ref_pred:
-            final={r:(0.50*(1.0 if r==ref_pred else 0.0))+
+        ref_prob={r:(1.0 if ref_pred==r else 0.0) for r in ('D','T')} if ref_pred else {r:pair_prob[r] for r in ('D','T')}
+
+        # IMPORTANT: the searched pair's own history is the primary signal.
+        # This prevents a strong global sequence from flipping a clear pair
+        # result (for example 3Q = T, T, T) into the opposite prediction.
+        if pair_total >= 3:
+            dominant=max(pair_cnt['D'],pair_cnt['T'])/pair_total
+            if dominant >= 0.75:
+                final={r:(0.75*pair_prob[r])+
+                         (0.15*pair_pattern_prob[r])+
+                         (0.07*ref_prob[r])+
+                         (0.03*global_prob[r]) for r in ('D','T')}
+            elif ref_pred:
+                final={r:(0.55*pair_prob[r])+
+                         (0.20*pair_pattern_prob[r])+
+                         (0.15*ref_prob[r])+
+                         (0.10*global_prob[r]) for r in ('D','T')}
+            else:
+                final={r:(0.60*pair_prob[r])+
+                         (0.25*pair_pattern_prob[r])+
+                         (0.15*global_prob[r]) for r in ('D','T')}
+        elif ref_pred:
+            final={r:(0.50*ref_prob[r])+
                      (0.30*pair_pattern_prob[r])+
                      (0.20*global_prob[r]) for r in ('D','T')}
         elif pair_scores:
             final={r:(0.55*pair_pattern_prob[r])+(0.45*global_prob[r]) for r in ('D','T')}
         else:
-            final=global_prob
+            final=pair_prob
 
         pred=max(('D','T'),key=lambda r:final[r])
         return pred,final[pred]*100
