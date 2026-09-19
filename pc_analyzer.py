@@ -978,15 +978,19 @@ class App:
             d=clean_card(item.get('dragon',''))
             t=clean_card(item.get('tiger',''))
 
-        # Compact Pair Result popup with enough height for DELETE RESULT and CLOSE.
+        # Pair Result popup: keep EDIT, DELETE RESULT and CLOSE visible together.
         win=tk.Toplevel(self.root)
         win.title('Pair Result')
-        win.geometry('220x310')
+        win.geometry('220x390')
         win.resizable(False,False)
         win.configure(bg='white')
         try:
-            x=self.root.winfo_pointerx()+12; y=self.root.winfo_pointery()+12
-            win.geometry(f'220x310+{x}+{y}')
+            x=self.root.winfo_pointerx()+12
+            y=self.root.winfo_pointery()+12
+            # Keep the full popup on-screen so DELETE RESULT is not hidden below the taskbar.
+            screen_h=self.root.winfo_screenheight()
+            y=min(y, max(10, screen_h-405))
+            win.geometry(f'220x390+{x}+{y}')
         except Exception:
             pass
 
