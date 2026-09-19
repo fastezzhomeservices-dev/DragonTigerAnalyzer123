@@ -715,6 +715,41 @@ class App:
         c=Counter(r.get('result') for r in self.data)
         self.summary.set(f'PAIR {self.pair.get().upper()} | D {c["D"]} | T {c["T"]} | TIE {c["TIE"]} | TOTAL {len(self.data)}')
 
+    def pattern_prediction(self, pair_rows):
+        pair_cnt=Counter(r.get('result') for r in pair_rows if r.get('result') in ('D','T'))
+        pair_total=sum(pair_cnt.values())
+        pair_prob={r:(pair_cnt[r]+1)/(pair_total+2) for r in ('D','T')}
+        seq=[normalize_result(r.get('result')) for r in self.data]
+        segments=[]; cur=[]
+        for res in seq:
+            if res in ('D','T'): cur.append(res)
+            else:
+                if cur: segments.append(cur); cur=[]
+        if cur: segments.append(cur)
+        context=segments[-1][-8:] if segments else []
+        if len(context)<4:
+            pred=max(('D','T'),key=lambda r:pair_prob[r])
+            return pred,pair_prob[pred]*100
+        scores=Counter()
+        for n in range(8,3,-1):
+            if len(context)<n: continue
+            pattern=context[-n:]; follows=Counter()
+            for seg in segments:
+                if len(seg)<=n: continue
+                for i in range(len(seg)-n):
+                    if seg[i:i+n]==pattern: follows[seg[i+n]]+=1
+            if not follows: continue
+            weight=n*n
+            for result,count in follows.items(): scores[result]+=weight*count
+        if not scores:
+            pred=max(('D','T'),key=lambda r:pair_prob[r])
+            return pred,pair_prob[pred]*100
+        total=sum(scores.values())
+        pattern_prob={r:scores[r]/total for r in ('D','T')}
+        final={r:(0.65*pattern_prob[r])+(0.35*pair_prob[r]) for r in ('D','T')}
+        pred=max(('D','T'),key=lambda r:final[r])
+        return pred,final[pred]*100
+
     def analyze(self):
         p=self.pair.get().upper().strip()
         # Record every Pair Analysis search without changing the existing statistical analysis.
@@ -742,12 +777,13 @@ class App:
                 self.pair_history[-1]['prediction']=''
                 self.render_pair_history(); self.save_settings()
             return
-        maxres=max(RESULTS,key=lambda x:cnt[x]); pct=cnt[maxres]/len(rows)*100
-        self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MOST {maxres} ({pct:.1f}%)')
-        self.current_prediction.set(maxres)
+        maxres=max(RESULTS,key=lambda x:cnt[x])
+        pred,pct=self.pattern_prediction(rows)
+        self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MOST {pred} ({pct:.1f}%)')
+        self.current_prediction.set(pred)
         self.prediction_pct.set(f'{pct:.1f}%')
         if self.pair_history:
-            self.pair_history[-1]['prediction']=maxres
+            self.pair_history[-1]['prediction']=pred
             self.render_pair_history(); self.save_settings()
         self.draw_frequency_chart(rows)
 
