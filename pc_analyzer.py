@@ -966,8 +966,14 @@ class App:
     def _show_pair_result_popup(self, item):
         pair=str(item.get('pair','')).strip().upper().replace(' ','')
         pred=normalize_result(item.get('prediction','')) or 'TIE'
-        d=clean_card(pair[:2] if len(pair)==3 and pair[:2]=='10' else pair[:1])
-        t=clean_card(pair[2:] if len(pair)==3 and pair[:2]=='10' else pair[1:2])
+        # Decode the searched Pair Patti correctly, including 10+10 ("1010").
+        # Examples: 1010 -> Dragon 10 / Tiger 10, 10J -> 10 / J, JQ -> J / Q.
+        if pair.startswith('10') and len(pair) >= 3:
+            d=clean_card('10')
+            t=clean_card(pair[2:])
+        else:
+            d=clean_card(pair[:1])
+            t=clean_card(pair[1:])
         if not d or not t:
             d=clean_card(item.get('dragon',''))
             t=clean_card(item.get('tiger',''))
