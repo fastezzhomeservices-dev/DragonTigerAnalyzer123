@@ -1209,13 +1209,6 @@ class App:
         if not rows:
             tk.Label(self.chart_frame,text='No matching pair history',bg='#111827',fg='#9ca3af').pack(pady=25)
             return
-        if top_next:
-            next_text='  |  '.join(f'{card} ({cnt})' for card,cnt in top_next)
-        else:
-            next_text='-'
-        tk.Label(self.chart_frame,text=f'TOP 4 NEXT PATTI: {next_text}',
-                 bg='#0758d9',fg='white',font=('Segoe UI',9,'bold'),
-                 padx=8,pady=3).pack(fill='x',pady=(0,4))
         counts=Counter()
         for r in rows:
             d,t=r.get('dragon',''),r.get('tiger','')
@@ -1237,6 +1230,13 @@ class App:
         top_next=[(card,cnt) for card,cnt in sorted(
             next_counts.items(), key=lambda x:(-x[1], CARDS.index(x[0]) if x[0] in CARDS else 99)
         )[:4]]
+        if top_next:
+            next_text='  |  '.join(f'{card} ({cnt})' for card,cnt in top_next)
+        else:
+            next_text='-'
+        tk.Label(self.chart_frame,text=f'TOP 4 NEXT PATTI: {next_text}',
+                 bg='#0758d9',fg='white',font=('Segoe UI',9,'bold'),
+                 padx=8,pady=3).pack(fill='x',pady=(0,4))
         for (num,side),v in top:
             row=tk.Frame(self.chart_frame,bg='#111827'); row.pack(fill='x',pady=2)
             tk.Label(row,text=f'{num}  {side}',bg='#14532d' if side=='D' else '#92400e',fg='white',width=7,font=('Segoe UI',9,'bold')).pack(side='left')
