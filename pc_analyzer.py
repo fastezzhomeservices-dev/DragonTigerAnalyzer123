@@ -370,8 +370,9 @@ class App:
                  width=8).pack(side='left',padx=(0,8))
         ref_combo.bind('<<ComboboxSelected>>',run_reference_search)
 
-        # Pair search history — pair selector is kept only in the mandatory reference row above.
-        # This section is reserved for the latest 15 history results, avoiding a duplicate Enter Pair control.
+        # Pair search history + TOP 4 NEXT PATTI.
+        # The TOP 4 column shows the most frequent cards in the round immediately
+        # after every historical occurrence of the searched Pair Patti.
         ph=tk.LabelFrame(content,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
                          font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         ph.pack(fill='x',padx=12,pady=2)
@@ -381,9 +382,19 @@ class App:
         search_row.pack_propagate(False)
 
         self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=54)
-        self.pair_history_frame.pack(fill='both',expand=True)
+        self.pair_history_frame.pack(side='left',fill='both',expand=True)
         self.pair_history_frame.pack_propagate(False)
         self.render_pair_history()
+
+        self.top_next_frame=tk.Frame(search_row,bg='#0758d9',width=300,height=54,
+                                     highlightthickness=1,highlightbackground='#00a8ff')
+        self.top_next_frame.pack(side='right',fill='y',padx=(8,0))
+        self.top_next_frame.pack_propagate(False)
+        tk.Label(self.top_next_frame,text='TOP 4 NEXT PATTI',bg='#0758d9',fg='white',
+                 font=('Segoe UI',9,'bold')).pack(anchor='w',padx=8,pady=(5,0))
+        self.top_next_label=tk.Label(self.top_next_frame,text='-',bg='#0758d9',fg='white',
+                                     font=('Segoe UI',10,'bold'),anchor='w')
+        self.top_next_label.pack(fill='x',padx=8,pady=(1,0))
 
         # Frequency chart
         chart_box=tk.LabelFrame(content,text='  NUMBER / DRAGON-TIGER FREQUENCY CHART  ',bg=PANEL,fg=YELLOW,
@@ -1244,9 +1255,8 @@ class App:
             next_text='  |  '.join(f'{card} ({cnt})' for card,cnt in top_next)
         else:
             next_text='-'
-        tk.Label(self.chart_frame,text=f'TOP 4 NEXT PATTI: {next_text}',
-                 bg='#0758d9',fg='white',font=('Segoe UI',9,'bold'),
-                 padx=8,pady=3).pack(fill='x',pady=(0,4))
+        if hasattr(self,'top_next_label'):
+            self.top_next_label.configure(text=next_text)
         for (num,side),v in top:
             row=tk.Frame(self.chart_frame,bg='#111827'); row.pack(fill='x',pady=2)
             tk.Label(row,text=f'{num}  {side}',bg='#14532d' if side=='D' else '#92400e',fg='white',width=7,font=('Segoe UI',9,'bold')).pack(side='left')
