@@ -450,14 +450,14 @@ class App:
         self.prediction_dashboard.pack(fill='x',padx=8,pady=2)
 
         # Hidden compatibility widgets used by existing analysis/export methods.
-        self.pair=tk.StringVar(value='JQ')
+        # IMPORTANT: keep the single Pair/Summary StringVars created in __init__
+        # so the visible Pair Summary and reference selector stay synchronized.
         hidden=tk.Frame(self.root,bg=BG)
         self.hidden_pair=hidden
         pair_combo=ttk.Combobox(hidden,textvariable=self.pair,values=[a+b for a in CARDS for b in CARDS],width=12)
         pair_combo.pack()
         tk.Button(hidden,text='ANALYZE',command=self.analyze).pack()
         self.prediction_label=tk.Label(hidden,textvariable=self.current_prediction)
-        self.summary=tk.StringVar(value='PAIR JQ | NO HISTORY')
         self.tree=ttk.Treeview(hidden,columns=('S NO','ROUND ID','TIME','DRAGON','TIGER','RESULT','PAIR','D O/E','T O/E','PREV RESULT'),show='headings')
         self.last_frame=tk.Frame(hidden)
         self.last_analysis=tk.StringVar(value='')
