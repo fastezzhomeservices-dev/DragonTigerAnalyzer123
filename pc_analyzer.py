@@ -989,19 +989,21 @@ class App:
             d=clean_card(item.get('dragon',''))
             t=clean_card(item.get('tiger',''))
 
-        # Pair Result popup: keep EDIT, DELETE RESULT and CLOSE visible together.
+        # Pair Result popup: DELETE RESULT is placed directly under EDIT/SAVE.
+        # Use a compact fixed height and keep the whole window inside the screen.
         win=tk.Toplevel(self.root)
         win.title('Pair Result')
-        win.geometry('220x390')
+        win.geometry('250x330')
         win.resizable(False,False)
         win.configure(bg='white')
         try:
             x=self.root.winfo_pointerx()+12
             y=self.root.winfo_pointery()+12
-            # Keep the full popup on-screen so DELETE RESULT is not hidden below the taskbar.
+            screen_w=self.root.winfo_screenwidth()
             screen_h=self.root.winfo_screenheight()
-            y=min(y, max(10, screen_h-405))
-            win.geometry(f'220x390+{x}+{y}')
+            x=min(x, max(10, screen_w-260))
+            y=min(y, max(10, screen_h-345))
+            win.geometry(f'250x330+{x}+{y}')
         except Exception:
             pass
 
@@ -1077,9 +1079,10 @@ class App:
             except Exception as e:
                 messagebox.showerror('Delete Result',str(e))
 
-        tk.Button(win,text='DELETE RESULT',command=delete_this_result,bg='#b91c1c',fg='white',
+        delete_btn=tk.Button(win,text='DELETE RESULT',command=delete_this_result,bg='#b91c1c',fg='white',
                   activebackground='#dc2626',activeforeground='white',
-                  font=('Segoe UI',9,'bold'),relief='groove',bd=1,padx=12,pady=4).pack(pady=(4,3))
+                  font=('Segoe UI',10,'bold'),relief='groove',bd=1,padx=18,pady=6)
+        delete_btn.pack(fill='x',padx=18,pady=(5,4))
         tk.Button(win,text='CLOSE',command=win.destroy,bg='#0758d9',fg='white',
                   activebackground='#0b78ff',activeforeground='white',
                   font=('Segoe UI',9,'bold'),relief='groove',bd=1,padx=12,pady=4).pack(pady=2)
