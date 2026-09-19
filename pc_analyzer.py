@@ -758,11 +758,11 @@ class App:
         return pred,probs[pred]*100
 
     def pattern_prediction(self, pair_rows):
-        # SIMPLE / TRANSPARENT PREDICTION FORMULA:
-        # 1) Pair History majority is primary.
-        # 2) If the pair history is close, use the pair's last 6 D/T results.
-        # 3) If the pair has no usable history, use card-level historical fallback.
-        # 4) Global sequence pattern is only a fallback/reference signal.
+        # BALANCED PREDICTION FORMULA:
+        # 1) Do NOT blindly repeat the Pair majority.
+        # 2) Use the searched Pair's historical D/T sequence and its transitions.
+        # 3) Use the last 4-5 Pair Search references only as a secondary context signal.
+        # 4) Card history and global pattern are fallback/reference signals.
         # TIE is excluded from D/T calculations.
 
         pair_cnt=Counter(
@@ -773,18 +773,17 @@ class App:
         pair_total=sum(pair_cnt.values())
         pair_prob={r:(pair_cnt[r]+1)/(pair_total+2) for r in ('D','T')}
 
-        # Last 6 results of this exact Pair Patti.
         pair_seq=[
             normalize_result(r.get('result'))
             for r in pair_rows
             if normalize_result(r.get('result')) in ('D','T')
         ]
-        last6=pair_seq[-6:]
 
-        # Pair-pattern signal: find historical occurrences of the pair's
-        # latest 3-6 D/T sequence and inspect what followed it.
+        # Historical transition/pattern signal from the same Pair.
+        # Longer matching patterns receive more weight, but only real
+        # historical continuations are counted.
         pair_pattern_scores=Counter()
-        for n in range(min(6,len(pair_seq)),2,-1):
+        for n in range(min(6,len(pair_seq)),1,-1):
             pat=pair_seq[-n:]
             for i in range(len(pair_seq)-n):
                 if pair_seq[i:i+n]==pat:
@@ -797,8 +796,35 @@ class App:
             total=sum(pair_pattern_scores.values())
             pair_pattern_prob={r:pair_pattern_scores[r]/total for r in ('D','T')}
 
-        # Card-level fallback for an unseen/weak Pair:
-        # use the Dragon card history and Tiger card history separately.
+        # Pair Search reference signal.
+        # The current search is excluded to prevent leakage. Each older
+        # search contributes its latest known D/T result. If all references
+        # are identical, they are treated as stale context and kept weak.
+        ref_scores=Counter()
+        old_history=self.pair_history[:-1] if self.pair_history else []
+        refs=[]
+        for item in old_history[-5:]:
+            seq_ref=[
+                normalize_result(v) for v in item.get('sequence',[])
+                if normalize_result(v) in ('D','T')
+            ]
+            if seq_ref:
+                refs.append(seq_ref[-1])
+        for v in refs:
+            ref_scores[v]+=1
+        ref_prob={r:0.5 for r in ('D','T')}
+        ref_strength=0.0
+        if ref_scores:
+            total=sum(ref_scores.values())
+            ref_prob={r:ref_scores[r]/total for r in ('D','T')}
+            # Repeated identical saved references are stale, not independent
+            # evidence. Give them only a small contribution.
+            if len(set(refs)) == 1:
+                ref_strength=0.03
+            else:
+                ref_strength=0.15
+
+        # Card-level historical fallback.
         search_pair=str(self.pair.get() or '').strip().upper()
         if search_pair.startswith('10') and len(search_pair)>=3:
             search_d='10'
@@ -825,7 +851,7 @@ class App:
                 card_total+=1
         card_prob={r:(card_scores[r]+1)/(card_total+2) for r in ('D','T')}
 
-        # Global D/T pattern is only a fallback/reference.
+        # Global pattern fallback.
         seq=[normalize_result(r.get('result')) for r in self.data]
         segments=[]; cur=[]
         for res in seq:
@@ -841,9 +867,7 @@ class App:
         global_prob=card_prob if card_total else pair_prob
         context=segments[-1][-6:] if segments else []
         global_scores=Counter()
-        for n in range(min(6,len(context)),2,-1):
-            if len(context)<n:
-                continue
+        for n in range(min(6,len(context)),1,-1):
             pat=context[-n:]
             for seg in segments:
                 for i in range(len(seg)-n):
@@ -856,33 +880,44 @@ class App:
             global_pattern={r:global_scores[r]/total for r in ('D','T')}
             global_prob={r:(0.70*global_pattern[r])+(0.30*global_prob[r]) for r in ('D','T')}
 
-        # Decision order:
-        # A clear Pair History majority wins.
-        # If close, last-6 pattern gets a small secondary role.
-        # If Pair History is absent, card history is used.
+        # Final scoring:
+        # Pair majority is important, but it no longer gets an 85% lock.
+        # A strong same-Pair pattern can therefore change a repetitive result.
         if pair_total >= 3:
             d=pair_cnt['D']; t=pair_cnt['T']
             dominant=max(d,t)/pair_total
-            if dominant >= 0.60:
-                final={r:(0.85*pair_prob[r])+
-                         (0.10*pair_pattern_prob[r])+
-                         (0.05*global_prob[r]) for r in ('D','T')}
-            else:
-                final={r:(0.55*pair_prob[r])+
-                         (0.35*pair_pattern_prob[r])+
+            pattern_strength=max(pair_pattern_prob.values())
+            if pair_pattern_scores and pattern_strength >= 0.60:
+                final={r:(0.35*pair_prob[r])+
+                         (0.55*pair_pattern_prob[r])+
                          (0.10*global_prob[r]) for r in ('D','T')}
+            elif dominant >= 0.60:
+                final={r:(0.55*pair_prob[r])+
+                         (0.30*pair_pattern_prob[r])+
+                         (0.10*global_prob[r])+
+                         (ref_strength*ref_prob[r]) for r in ('D','T')}
+            else:
+                final={r:(0.40*pair_prob[r])+
+                         (0.40*pair_pattern_prob[r])+
+                         (0.10*global_prob[r])+
+                         (ref_strength*ref_prob[r]) for r in ('D','T')}
         elif pair_total > 0:
-            final={r:(0.65*pair_prob[r])+
-                     (0.25*pair_pattern_prob[r])+
-                     (0.10*global_prob[r]) for r in ('D','T')}
+            final={r:(0.45*pair_prob[r])+
+                     (0.35*pair_pattern_prob[r])+
+                     (0.15*global_prob[r])+
+                     (ref_strength*ref_prob[r]) for r in ('D','T')}
         elif card_total > 0:
-            final={r:(0.75*card_prob[r])+
-                     (0.25*global_prob[r]) for r in ('D','T')}
+            final={r:(0.70*card_prob[r])+
+                     (0.20*global_prob[r])+
+                     (ref_strength*ref_prob[r]) for r in ('D','T')}
         elif pair_pattern_scores:
             final=pair_pattern_prob
         else:
             final=pair_prob
 
+        # Normalize because the optional reference contribution can be small.
+        total=sum(final.values()) or 1.0
+        final={r:final[r]/total for r in ('D','T')}
         pred=max(('D','T'),key=lambda r:final[r])
         return pred,final[pred]*100
 
