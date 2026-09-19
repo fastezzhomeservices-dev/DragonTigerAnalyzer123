@@ -1012,10 +1012,35 @@ class App:
         trophy.create_text(27,27,text='★',fill='white',font=('Segoe UI',7,'bold'))
 
         result_color=RESULT_COLORS.get(pred,'#7c3aed')
-        tk.Label(win,text=f'Result: {pred}',bg='white',fg=result_color,
-                 font=('Segoe UI',8,'bold')).pack(pady=(1,1))
+        result_label=tk.Label(win,text=f'Result: {pred}',bg='white',fg=result_color,
+                 font=('Segoe UI',8,'bold'))
+        result_label.pack(pady=(1,1))
         tk.Label(win,text=f'Dragon {self.oe(d) if d else "-"} | Tiger {self.oe(t) if t else "-"}',
                  bg='white',fg='#475569',font=('Segoe UI',6,'bold')).pack(pady=1)
+
+        # Pair Patti only: manually classify this searched pair as D, T, or TIE.
+        edit_row=tk.Frame(win,bg='white')
+        edit_row.pack(pady=(2,3))
+        tk.Label(edit_row,text='EDIT:',bg='white',fg='#111111',
+                 font=('Segoe UI',7,'bold')).pack(side='left',padx=(0,4))
+        edit_var=tk.StringVar(value=pred if pred in RESULTS else 'TIE')
+        edit_combo=ttk.Combobox(edit_row,textvariable=edit_var,values=RESULTS,
+                                state='readonly',width=6,font=('Segoe UI',8,'bold'))
+        edit_combo.pack(side='left')
+        def save_pair_result_edit():
+            new_result=normalize_result(edit_var.get())
+            if new_result not in RESULTS:
+                return
+            item['prediction']=new_result
+            self.save_settings()
+            self.render_pair_history()
+            result_label.configure(text=f'Result: {new_result}',
+                                   fg=RESULT_COLORS.get(new_result,'#7c3aed'))
+            self.status.set(f'PAIR PATTI UPDATED: {pair} = {new_result}')
+        tk.Button(edit_row,text='SAVE',command=save_pair_result_edit,bg='#15803d',fg='white',
+                  activebackground='#16a34a',activeforeground='white',
+                  font=('Segoe UI',7,'bold'),relief='groove',bd=1,padx=7,pady=2).pack(side='left',padx=(5,0))
+
         def delete_this_result():
             try:
                 idx=next((i for i,x in enumerate(self.pair_history) if x is item), -1)
