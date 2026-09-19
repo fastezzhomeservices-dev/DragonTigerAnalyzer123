@@ -392,6 +392,19 @@ class App:
                                      font=('Segoe UI',10,'bold'),anchor='w',justify='left')
         self.top_next_label.pack(fill='x',padx=8,pady=(1,0))
 
+        # Reference pattern is shown separately from TOP 4 and prediction.
+        # It comes only from the previous Pair Search History results.
+        self.reference_pattern_frame=tk.Frame(search_row,bg='#0f766e',width=280,height=54,
+                                              highlightthickness=1,highlightbackground='#34d399')
+        self.reference_pattern_frame.pack(side='right',fill='y',padx=(8,0))
+        self.reference_pattern_frame.pack_propagate(False)
+        tk.Label(self.reference_pattern_frame,text='REFERENCE PATTERN  |  PAIR HISTORY',
+                 bg='#0f766e',fg='white',font=('Segoe UI',8,'bold')).pack(anchor='w',padx=8,pady=(4,0))
+        self.reference_pattern_label=tk.Label(self.reference_pattern_frame,text='-',
+                                              bg='#0f766e',fg='white',font=('Segoe UI',10,'bold'),
+                                              anchor='w',justify='left')
+        self.reference_pattern_label.pack(fill='x',padx=8,pady=(1,0))
+
         self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=54,width=760)
         self.pair_history_frame.pack(side='left',fill='y',expand=False)
         self.pair_history_frame.pack_propagate(False)
@@ -1347,6 +1360,23 @@ class App:
             next_text='-'
         if hasattr(self,'top_next_label'):
             self.top_next_label.configure(text=next_text)
+
+        # SHOW THE REFERENCE PATTERN SEPARATELY.
+        # Use only previous Pair Search History entries; exclude current search.
+        ref_values=[]
+        old_history=self.pair_history[:-1] if self.pair_history else []
+        for item in old_history[-5:]:
+            seq_ref=[normalize_result(v) for v in item.get('sequence',[])
+                     if normalize_result(v) in ('D','T')]
+            if seq_ref:
+                ref_values.append(seq_ref[-1])
+        if hasattr(self,'reference_pattern_label'):
+            if len(ref_values)>=4:
+                ref_text='  →  '.join(ref_values[-5:])
+            else:
+                ref_text='Need 4-5 references'
+            self.reference_pattern_label.configure(text=ref_text)
+
         for (num,side),v in top:
             row=tk.Frame(self.chart_frame,bg='#111827'); row.pack(fill='x',pady=2)
             tk.Label(row,text=f'{num}  {side}',bg='#14532d' if side=='D' else '#92400e',fg='white',width=7,font=('Segoe UI',9,'bold')).pack(side='left')
