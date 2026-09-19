@@ -1210,9 +1210,16 @@ class App:
         if not path: return
         try:
             if path.lower().endswith('.csv'):
-                rows=[['TYPE','TIME','PAIR','PREDICTION','CAME?','D','T','FINAL','RESULT SEQUENCE']]
+                rows=[['TYPE','TIME','PAIR','PREDICTION','CAME?','D','T','RESULT','FINAL','RESULT SEQUENCE']]
                 for x in reversed(self.pair_history):
-                    rows.append(['PAIR SEARCH',x.get('time',''),x.get('pair',''),x.get('prediction',''),'','','','', ' '.join(x.get('sequence',[]))])
+                    pair=str(x.get('pair','')).strip().upper()
+                    if pair.startswith('10') and len(pair)>=3:
+                        d_card='10'; t_card=pair[2:]
+                    else:
+                        d_card=pair[:1]; t_card=pair[1:]
+                    seq=[normalize_result(v) for v in x.get('sequence',[]) if normalize_result(v) in ('D','T','TIE')]
+                    actual_result=seq[-1] if seq else ''
+                    rows.append(['PAIR SEARCH',x.get('time',''),pair,x.get('prediction',''),' ',d_card,t_card,actual_result,'',' '.join(x.get('sequence',[]))])
                 for x in reversed(self.result_history):
                     rows.append(['PRODUCTION RESULT',x.get('time',''),x.get('pair',''),x.get('prediction',''),x.get('came',''),x.get('dragon',''),x.get('tiger',''),x.get('final',''),''])
                 with open(path,'w',newline='',encoding='utf-8-sig') as f: csv.writer(f).writerows(rows)
@@ -1220,8 +1227,16 @@ class App:
                 from openpyxl import Workbook
                 wb=Workbook()
                 ws=wb.active; ws.title='PAIR SEARCH HISTORY'
-                ws.append(['TIME','PAIR','PREDICTION','RESULT SEQUENCE'])
-                for x in reversed(self.pair_history): ws.append([x.get('time',''),x.get('pair',''),x.get('prediction',''),' '.join(x.get('sequence',[]))])
+                ws.append(['TIME','PAIR','PREDICTION','CAME?','D','T','RESULT','RESULT SEQUENCE'])
+                for x in reversed(self.pair_history):
+                    pair=str(x.get('pair','')).strip().upper()
+                    if pair.startswith('10') and len(pair)>=3:
+                        d_card='10'; t_card=pair[2:]
+                    else:
+                        d_card=pair[:1]; t_card=pair[1:]
+                    seq=[normalize_result(v) for v in x.get('sequence',[]) if normalize_result(v) in ('D','T','TIE')]
+                    actual_result=seq[-1] if seq else ''
+                    ws.append([x.get('time',''),pair,x.get('prediction',''),' ',d_card,t_card,actual_result,' '.join(x.get('sequence',[]))])
                 ws2=wb.create_sheet('PRODUCTION RESULTS')
                 ws2.append(['TIME','PAIR','PREDICTION','CAME?','D','T','FINAL RESULT'])
                 for x in reversed(self.result_history): ws2.append([x.get('time',''),x.get('pair',''),x.get('prediction',''),x.get('came',''),x.get('dragon',''),x.get('tiger',''),x.get('final','')])
