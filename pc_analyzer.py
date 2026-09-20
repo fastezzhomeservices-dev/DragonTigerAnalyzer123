@@ -780,14 +780,13 @@ class App:
         while a minimum of 2 historical matches is preferred to avoid a
         one-match overfit.
         """
-        # Build the latest contiguous D/T chain. A TIE breaks the chain.
-        chain=[]
-        for row in self.data:
-            res=normalize_result(row.get('result'))
-            if res=='TIE':
-                chain=[]
-            elif res in ('D','T'):
-                chain.append(res)
+        # Build the D/T reference stream. TIE is excluded from the D/T pattern;
+        # it does not become D or T and therefore cannot bias the pattern counts.
+        chain=[
+            normalize_result(row.get('result'))
+            for row in self.data
+            if normalize_result(row.get('result')) in ('D','T')
+        ]
         if len(chain)<10:
             return None
 
@@ -1334,7 +1333,7 @@ class App:
 
         text_box.insert('end','4) IMPORTANT CHECKS\n','heading')
         text_box.insert('end','• Reference uses actual imported RESULT only; prediction history is not used as the reference.\n')
-        text_box.insert('end','• TIE breaks the continuous pattern chain.\n')
+        text_box.insert('end','• TIE is excluded from the D/T reference stream; it is never counted as D or T.\n')
         text_box.insert('end','• The latest 10-15 actual rounds are re-matched against the complete stored history every time ANALYZE runs.\n')
         text_box.insert('end','• The current/latest occurrence is not counted as a NEXT-result match because it has no following round.\n')
         text_box.insert('end','• 10-15 round patterns are preferred; if unavailable, the longest shorter suffix inside the same latest-15 report is used.\n')
