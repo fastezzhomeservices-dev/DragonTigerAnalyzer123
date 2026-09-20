@@ -94,8 +94,6 @@ class App:
         self.result_history = []
         self.current_prediction = tk.StringVar(value='')
         self.prediction_pct = tk.StringVar(value='')
-        self.video_number_prediction = tk.StringVar(value='-')
-        self.video_number_prediction_pct = tk.StringVar(value='')
         self.prediction_correct = tk.StringVar(value='')
         self.actual_dragon = tk.StringVar(value='')
         self.actual_tiger = tk.StringVar(value='')
@@ -405,25 +403,7 @@ class App:
         tk.Label(refbar,textvariable=self.prediction_pct,bg=PANEL,fg=YELLOW,font=('Segoe UI',9,'bold'),
                  width=8).pack(side='left',padx=(0,8))
         ref_combo.bind('<<ComboboxSelected>>',run_reference_search)
-        # VIDEO NUMBER/PATTI PREDICTION is deliberately separate from the existing
-        # D/T prediction.  The D/T prediction remains driven by the normal app
-        # formula, while this box reports the card-number signal derived only from
-        # the selected video-style 10-15 round historical reference.
-        video_num_bar=tk.Frame(content,bg='#3f2a00',highlightthickness=1,highlightbackground='#f59e0b',height=42)
-        video_num_bar.pack(fill='x',padx=12,pady=(0,2))
-        video_num_bar.pack_propagate(False)
-        tk.Label(video_num_bar,text='VIDEO NUMBER PREDICTION',bg='#3f2a00',fg='#ffd166',
-                 font=('Segoe UI',9,'bold')).pack(side='left',padx=(10,14))
-        tk.Label(video_num_bar,text='10-15 ROUND MATCH → NEXT PATTI:',bg='#3f2a00',fg='white',
-                 font=('Segoe UI',9,'bold')).pack(side='left')
-        tk.Label(video_num_bar,textvariable=self.video_number_prediction,bg='#3f2a00',fg='#ffd166',
-                 font=('Segoe UI',11,'bold'),anchor='w').pack(side='left',padx=10)
-        tk.Label(video_num_bar,textvariable=self.video_number_prediction_pct,bg='#3f2a00',fg='#fbbf24',
-                 font=('Segoe UI',10,'bold'),anchor='w').pack(side='left',padx=(0,10))
-        tk.Label(video_num_bar,text='(SEPARATE FROM D/T PREDICTION)',bg='#3f2a00',fg='#fbbf24',
-                 font=('Segoe UI',8,'bold')).pack(side='right',padx=10)
-
-        # Pair search history + TOP 4 NEXT PATTI.
+        # Pair search history + TOP 4 NEXT PATTI from imported Excel/CSV data.
         # The TOP 4 column shows the most frequent cards in the round immediately
         # after every historical occurrence of the searched Pair Patti.
         ph=tk.LabelFrame(content,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
@@ -439,24 +419,11 @@ class App:
                                      highlightthickness=1,highlightbackground='#00a8ff')
         self.top_next_frame.pack(side='right',fill='y',padx=(8,0))
         self.top_next_frame.pack_propagate(False)
-        tk.Label(self.top_next_frame,text='TOP 4 NEXT PATTI  |  ALL DATA',bg='#0758d9',fg='white',
+        tk.Label(self.top_next_frame,text='TOP 4 NEXT PATTI  |  EXCEL DATA',bg='#0758d9',fg='white',
                  font=('Segoe UI',9,'bold')).pack(anchor='w',padx=8,pady=(4,0))
         self.top_next_label=tk.Label(self.top_next_frame,text='-',bg='#0758d9',fg='white',
                                      font=('Segoe UI',10,'bold'),anchor='w',justify='left')
         self.top_next_label.pack(fill='x',padx=8,pady=(1,0))
-
-        # Reference pattern is shown separately from TOP 4 and prediction.
-        # It comes only from the previous Pair Search History results.
-        self.reference_pattern_frame=tk.Frame(search_row,bg='#0f766e',width=280,height=54,
-                                              highlightthickness=1,highlightbackground='#34d399')
-        self.reference_pattern_frame.pack(side='right',fill='y',padx=(8,0))
-        self.reference_pattern_frame.pack_propagate(False)
-        tk.Label(self.reference_pattern_frame,text='VIDEO REFERENCE  |  10-15 RESULTS',
-                 bg='#0f766e',fg='white',font=('Segoe UI',8,'bold')).pack(anchor='w',padx=8,pady=(4,0))
-        self.reference_pattern_label=tk.Label(self.reference_pattern_frame,text='-',
-                                              bg='#0f766e',fg='white',font=('Segoe UI',10,'bold'),
-                                              anchor='w',justify='left')
-        self.reference_pattern_label.pack(fill='x',padx=8,pady=(1,0))
 
         self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=54,width=760)
         self.pair_history_frame.pack(side='left',fill='y',expand=False)
@@ -799,167 +766,23 @@ class App:
         c=Counter(r.get('result') for r in self.data)
         self.summary.set(f'PAIR {self.pair.get().upper()} | D {c["D"]} | T {c["T"]} | TIE {c["TIE"]} | TOTAL {len(self.data)}')
 
-    def pair_search_reference_prediction(self, pair_rows):
-        # Use the previous 4-5 Pair Search references as a D/T pattern.
-        # The current search is excluded so the new prediction cannot leak its own result.
-        refs=[]
-        history=self.pair_history[:-1] if self.pair_history else []
-        for item in history[-5:]:
-            seq=[normalize_result(x) for x in item.get('sequence',[]) if normalize_result(x) in ('D','T')]
-            if seq:
-                refs.append(seq[-1])
-        if len(refs)<4:
-            return None,0.0
-        pattern=refs[-5:]
-        seq=[normalize_result(r.get('result')) for r in self.data]
-        scores=Counter()
-        for n in (len(pattern),4):
-            if len(pattern)<n:
-                continue
-            pat=pattern[-n:]
-            for i in range(len(seq)-n):
-                if seq[i:i+n]==pat and i+n<len(seq):
-                    nxt=seq[i+n]
-                    if nxt in ('D','T'):
-                        scores[nxt]+=n*n
-        if not scores:
-            return None,0.0
-        total=sum(scores.values())
-        probs={x:scores[x]/total for x in ('D','T')}
-        pred=max(('D','T'),key=lambda x:probs[x])
-        return pred,probs[pred]*100
-
-    def get_video_reference(self):
-        """
-        Fixed VIDEO-REPORT style reference engine.
-        Uses the latest 10-15 ACTUAL D/T results from imported data and
-        searches the COMPLETE stored history for the same contiguous pattern.
-        TIE is excluded from the D/T reference stream and does not become D or T.
-        The longest available window is preferred, with shorter-window fallback.
-        """
-        # Build the D/T reference stream. TIE is excluded from the D/T pattern;
-        # it does not become D or T and therefore cannot bias the pattern counts.
-        chain=[
-            normalize_result(row.get('result'))
-            for row in self.data
-            if normalize_result(row.get('result')) in ('D','T')
-        ]
-        if len(chain)<10:
-            return None
-
-        max_len=min(15,len(chain))
-        windows=[]
-        for n in range(max_len,3,-1):
-            pat=chain[-n:]
-            matches=[]
-            for i in range(len(chain)-n):
-                if chain[i:i+n] != pat:
-                    continue
-                nxt=chain[i+n] if i+n < len(chain) else ''
-                if nxt in ('D','T'):
-                    matches.append((i+1,nxt))
-            if matches:
-                cnt=Counter(x[1] for x in matches)
-                windows.append({
-                    'length':n,
-                    'pattern':''.join(pat),
-                    'matches':len(matches),
-                    'D':cnt['D'],
-                    'T':cnt['T'],
-                    'TIE':0,
-                    'rows':matches,
-                })
-
-        if not windows:
-            return None
-
-        # Prefer the longest available 10-15 round reference. If none of the
-        # 10-15 windows has a match, use the longest shorter suffix inside the
-        # same latest-15 report so the reference does not go blank.
-        primary_band=[w for w in windows if w['length']>=10]
-        strong=[w for w in windows if w['matches']>=2]
-        primary=(primary_band[0] if primary_band else (strong[0] if strong else windows[0]))
-        total=primary['D']+primary['T']
-        primary['prob']={
-            'D': primary['D']/total if total else 0.5,
-            'T': primary['T']/total if total else 0.5,
-        }
-        primary['all_windows']=windows
-        primary['chain']=''.join(chain[-15:])
-        return primary
-
-    def get_video_number_prediction(self, video_ref=None):
-        """
-        Separate VIDEO NUMBER/PATTI signal.
-        Uses the exact same selected video-style 10-15 result pattern as the
-        D/T reference, then counts the Dragon/Tiger cards in the immediate next
-        D/T round for every historical match. This does not replace the normal
-        D/T prediction.
-        """
-        if video_ref is None:
-            video_ref=self.get_video_reference()
-        if not video_ref:
-            return []
-
-        # Keep original imported-row positions alongside the D/T-only stream so
-        # the next historical D/T round can be mapped back to its actual cards.
-        chain_rows=[]
-        for idx,row in enumerate(self.data):
-            res=normalize_result(row.get('result'))
-            if res in ('D','T'):
-                chain_rows.append((idx,row,res))
-        n=int(video_ref.get('length',0) or 0)
-        pattern=str(video_ref.get('pattern','') or '')
-        if n < 4 or len(chain_rows) <= n or not pattern:
-            return []
-
-        counts=Counter()
-        matched_rounds=0
-        for i in range(len(chain_rows)-n):
-            seq=''.join(x[2] for x in chain_rows[i:i+n])
-            if seq != pattern:
-                continue
-            # The next D/T round after the exact historical pattern.
-            nxt=chain_rows[i+n][1]
-            d=clean_card(nxt.get('dragon',''))
-            t=clean_card(nxt.get('tiger',''))
-            if d:
-                counts[d]+=1
-            if t:
-                counts[t]+=1
-            matched_rounds+=1
-
-        top=sorted(
-            counts.items(),
-            key=lambda x:(-x[1], CARDS.index(x[0]) if x[0] in CARDS else 99)
-        )[:4]
-        return top
-
     def pattern_prediction(self, pair_rows):
-        """Excel-only reference: imported data is the only source."""
+        """STRICT EXCEL-ONLY prediction: selected pair -> immediate next imported round."""
         search_pair=str(self.pair.get() or '').strip().upper().replace(' ','')
         next_results=Counter()
-        next_numbers=Counter()
         for i,row in enumerate(self.data[:-1]):
             cur=clean_card(row.get('dragon','')) + clean_card(row.get('tiger',''))
             if cur != search_pair:
                 continue
             nxt=self.data[i+1]
             nr=normalize_result(nxt.get('result'))
-            if nr in RESULTS: next_results[nr]+=1
-            nd=clean_card(nxt.get('dragon','')); nt=clean_card(nxt.get('tiger',''))
-            if nd: next_numbers[nd]+=1
-            if nt: next_numbers[nt]+=1
-        own_counts=Counter(normalize_result(r.get('result')) for r in pair_rows)
-        if next_results:
-            pred=max(RESULTS,key=lambda x:next_results[x])
-            total=sum(next_results.values()) or 1
-        elif own_counts:
-            pred=max(RESULTS,key=lambda x:own_counts[x])
-            total=sum(own_counts.values()) or 1
-        else:
+            if nr in RESULTS:
+                next_results[nr] += 1
+        if not next_results:
             return 'NO PREDICTION',0.0
-        return pred,(next_results[pred] if next_results else own_counts[pred])/total*100
+        pred=max(RESULTS,key=lambda x:next_results[x])
+        total=sum(next_results.values()) or 1
+        return pred,next_results[pred]/total*100
     def analyze(self):
         p=self.pair.get().upper().strip()
         # Record every Pair Analysis search without changing the existing statistical analysis.
@@ -1079,18 +902,19 @@ class App:
         cv.configure(scrollregion=(0,0,W,len(self.report_rows)*row_h))
 
     def _circle(self, parent, result, size=40):
-        result=normalize_result(result) or 'TIE'
-        color=RESULT_COLORS.get(result,'#7c3aed')
+        result=normalize_result(result)
+        color=RESULT_COLORS.get(result,'#64748b')
+        label=result if result else '-'
         cv=tk.Canvas(parent,width=size,height=size,bg=parent.cget('bg'),highlightthickness=0,cursor='hand2')
         pad=2
         cv.create_oval(pad,pad,size-pad,size-pad,fill=color,outline='')
-        cv.create_text(size/2,size/2,text=result,fill='white',
+        cv.create_text(size/2,size/2,text=label,fill='white',
                        font=('Segoe UI',max(8,int(size*0.25)),'bold'))
         return cv
 
     def _show_pair_result_popup(self, item):
         pair=str(item.get('pair','')).strip().upper().replace(' ','')
-        pred=normalize_result(item.get('prediction','')) or 'TIE'
+        pred=normalize_result(item.get('prediction','')) or '-'
         # Decode the searched Pair Patti correctly, including 10+10 ("1010").
         # Examples: 1010 -> Dragon 10 / Tiger 10, 10J -> 10 / J, JQ -> J / Q.
         d,t=pair_to_cards(pair)
@@ -1154,44 +978,7 @@ class App:
         tk.Label(win,text=f'Dragon {self.oe(d) if d else "-"} | Tiger {self.oe(t) if t else "-"}',
                  bg='white',fg='#475569',font=('Segoe UI',6,'bold')).pack(pady=1)
 
-        # Pair Patti only: manually classify this searched pair as D, T, or TIE.
-        edit_row=tk.Frame(win,bg='white')
-        edit_row.pack(pady=(2,3))
-        tk.Label(edit_row,text='EDIT:',bg='white',fg='#111111',
-                 font=('Segoe UI',7,'bold')).pack(side='left',padx=(0,4))
-        edit_var=tk.StringVar(value=pred if pred in RESULTS else 'TIE')
-        edit_combo=ttk.Combobox(edit_row,textvariable=edit_var,values=RESULTS,
-                                state='readonly',width=6,font=('Segoe UI',8,'bold'))
-        edit_combo.pack(side='left')
-        def save_pair_result_edit():
-            new_result=normalize_result(edit_var.get())
-            if new_result not in RESULTS:
-                return
-            item['prediction']=new_result
-            self.save_settings()
-            self.render_pair_history()
-            result_label.configure(text=f'Result: {new_result}',
-                                   fg=RESULT_COLORS.get(new_result,'#7c3aed'))
-            self.status.set(f'PAIR PATTI UPDATED: {pair} = {new_result}')
-        tk.Button(edit_row,text='SAVE',command=save_pair_result_edit,bg='#15803d',fg='white',
-                  activebackground='#16a34a',activeforeground='white',
-                  font=('Segoe UI',7,'bold'),relief='groove',bd=1,padx=7,pady=2).pack(side='left',padx=(5,0))
-
-        def delete_this_result():
-            try:
-                idx=next((i for i,x in enumerate(self.pair_history) if x is item), -1)
-                if idx < 0:
-                    idx=next((i for i,x in enumerate(self.pair_history)
-                              if x.get('time')==item.get('time') and x.get('pair')==item.get('pair')
-                              and x.get('prediction')==item.get('prediction')), -1)
-                if idx >= 0:
-                    del self.pair_history[idx]
-                    self.save_settings()
-                    self.render_pair_history()
-                win.destroy()
-            except Exception as e:
-                messagebox.showerror('Delete Result',str(e))
-
+        # Result is fixed from the actual Dragon/Tiger cards; no manual override is allowed.
         # Large red DELETE RESULT button — deliberately placed before CLOSE and kept in view.
         delete_btn=tk.Button(win,text='DELETE RESULT',command=delete_this_result,bg='#b91c1c',fg='white',
                   activebackground='#dc2626',activeforeground='white',
@@ -1224,7 +1011,7 @@ class App:
             # Example: 5Q => Dragon 5 < Tiger Q => T.
             pair=str(item.get('pair','')).strip().upper().replace(' ','')
             hist_d,hist_t=pair_to_cards(pair)
-            actual_hist_result=result_from_cards(hist_d,hist_t) or normalize_result(item.get('result')) or 'TIE'
+            actual_hist_result=result_from_cards(hist_d,hist_t) or normalize_result(item.get('result')) or ''
             cv=self._circle(slot,actual_hist_result,40)
             cv.pack(anchor='center',pady=2)
             cv.bind('<Button-1>',lambda e,it=item:self._show_pair_result_popup(it))
@@ -1274,8 +1061,6 @@ class App:
         self.result_history=[]
         self.current_prediction.set('')
         self.prediction_pct.set('')
-        self.video_number_prediction.set('-')
-        self.video_number_prediction_pct.set('')
         self.prediction_correct.set('')
         self.actual_dragon.set('')
         self.actual_tiger.set('')
@@ -1286,17 +1071,17 @@ class App:
         self.status.set('PREDICTION REPORT RESET')
         messagebox.showinfo('Prediction Report','Prediction Report has been reset successfully.')
     def show_prediction_reference(self):
-        """Show the fixed 10-15 result reference and prediction formula audit."""
+        """Show only the imported Excel/CSV data used by the current Pair prediction."""
         win=tk.Toplevel(self.root)
-        win.title('Prediction Reference')
-        win.geometry('1050x720')
-        win.minsize(900,620)
+        win.title('Prediction Reference - Excel Data Only')
+        win.geometry('900x650')
+        win.minsize(760,560)
         t=self._theme()
         win.configure(bg=t['root'])
 
-        tk.Label(win,text='PREDICTION REFERENCE / 10-15 RESULT AUDIT',
+        tk.Label(win,text='PREDICTION REFERENCE — EXCEL / CSV DATA ONLY',
                  bg=t['root'],fg=t['accent'],font=('Segoe UI',15,'bold')).pack(pady=(10,4))
-        tk.Label(win,text='VIDEO-STYLE REFERENCE = latest 10-15 actual D/T results matched against ALL imported history',
+        tk.Label(win,text='No Video Round / Video Formula is used.',
                  bg=t['root'],fg=t['text'],font=('Segoe UI',9,'bold')).pack(pady=(0,8))
 
         outer=tk.Frame(win,bg=t['root']); outer.pack(fill='both',expand=True,padx=12,pady=4)
@@ -1307,77 +1092,54 @@ class App:
         text_box.pack(side='left',fill='both',expand=True)
         scroll.pack(side='right',fill='y')
 
-        search_pair=str(self.pair.get() or '').strip().upper()
-        pair_rows=[r for r in self.data if clean_card(r.get('dragon',''))+clean_card(r.get('tiger',''))==search_pair]
-        ref=self.get_video_reference()
+        search_pair=str(self.pair.get() or '').strip().upper().replace(' ','')
+        pair_rows=[r for r in self.data
+                   if clean_card(r.get('dragon',''))+clean_card(r.get('tiger',''))==search_pair]
+
+        next_results=Counter()
+        next_numbers=Counter()
+        matched_rows=[]
+        for i,row in enumerate(self.data[:-1]):
+            cur=clean_card(row.get('dragon',''))+clean_card(row.get('tiger',''))
+            if cur != search_pair:
+                continue
+            nxt=self.data[i+1]
+            nr=normalize_result(nxt.get('result'))
+            if nr in RESULTS:
+                next_results[nr]+=1
+            nd=clean_card(nxt.get('dragon','')); nt=clean_card(nxt.get('tiger',''))
+            if nd: next_numbers[nd]+=1
+            if nt: next_numbers[nt]+=1
+            matched_rows.append((row,nxt))
+
         pred,pct=self.pattern_prediction(pair_rows)
 
-        text_box.insert('end','STATUS\n','heading')
-        text_box.insert('end',('WORKING — 10-15 result reference found\n' if ref else
-                               'WAITING — need at least 10 continuous actual D/T results with a historical match\n'))
-        text_box.insert('end',f'Current Pair: {search_pair or "-"}\n')
-        text_box.insert('end',f'Imported Data: {len(self.data)} rounds | S.NO. {self.data[0].get("sno","-") if self.data else "-"} → {self.data[-1].get("sno","-") if self.data else "-"}\n\n')
+        text_box.insert('end','DATA SOURCE\\n','heading')
+        text_box.insert('end',f'Imported rounds: {len(self.data)}\\n')
+        text_box.insert('end',f'Selected Pair: {search_pair or "-"}\\n')
+        text_box.insert('end','Source used: imported Excel/CSV rows only\\n')
+        text_box.insert('end','Video Round data/formula: REMOVED\\n\\n')
 
-        text_box.insert('end','1) FIXED VIDEO-STYLE CURRENT REFERENCE\n','heading')
-        if ref:
-            text_box.insert('end',f'Latest 15-chain (D/T only; TIE excluded): {ref.get("chain","-")}\n')
-            text_box.insert('end',f'Selected pattern: {ref["pattern"]}\n')
-            text_box.insert('end',f'Pattern length: {ref["length"]} rounds\n')
-            text_box.insert('end',f'Historical NEXT matches: {ref["matches"]}\n')
-            text_box.insert('end',f'NEXT D: {ref["D"]} | NEXT T: {ref["T"]}\n')
-            text_box.insert('end',f'Reference probability: D {ref["prob"]["D"]*100:.1f}% | T {ref["prob"]["T"]*100:.1f}%\n')
-            text_box.insert('end','Window tests 10-15:\n')
-            for w in ref.get('all_windows',[]):
-                text_box.insert('end',f'  {w["length"]}R {w["pattern"]} → matches {w["matches"]} | NEXT D {w["D"]} / T {w["T"]}\n')
-            if ref.get('rows'):
-                sample=', '.join(f'S.NO {i}→{nxt}' for i,nxt in ref['rows'][:15])
-                text_box.insert('end',f'Match sample: {sample}\n')
-        else:
-            text_box.insert('end','No exact 10-15 historical continuation found yet.\n')
-        text_box.insert('end','\n')
+        text_box.insert('end','1) SELECTED PAIR OCCURRENCES\\n','heading')
+        text_box.insert('end',f'Pair found in imported data: {len(pair_rows)} times\\n')
+        text_box.insert('end',f'Occurrences with an immediate next imported round: {len(matched_rows)}\\n\\n')
 
-        text_box.insert('end','2) VIDEO NUMBER / PATTI PREDICTION\n','heading')
-        num_top=self.get_video_number_prediction(ref)
-        text_box.insert('end',(' | '.join(f'{card} ({cnt})' for card,cnt in num_top) if num_top else 'No next-patti reference available') + '\n')
-        text_box.insert('end','This number prediction is separate from the normal D/T prediction.\n\n')
+        text_box.insert('end','2) IMMEDIATE NEXT-ROUND RESULT COUNTS\\n','heading')
+        text_box.insert('end',f'D: {next_results["D"]}\\n')
+        text_box.insert('end',f'T: {next_results["T"]}\\n')
+        text_box.insert('end',f'TIE: {next_results["TIE"]}\\n\\n')
 
-        text_box.insert('end','3) CURRENT PAIR SECONDARY SIGNAL\n','heading')
-        pair_next=Counter()
-        pair_occurrences=0
-        for i,r in enumerate(self.data[:-1]):
-            cur=clean_card(r.get('dragon',''))+clean_card(r.get('tiger',''))
-            if cur==search_pair:
-                pair_occurrences+=1
-                nxt=normalize_result(self.data[i+1].get('result'))
-                if nxt in ('D','T'): pair_next[nxt]+=1
-        pair_cnt=Counter(normalize_result(r.get('result')) for r in pair_rows
-                         if normalize_result(r.get('result')) in ('D','T'))
-        text_box.insert('end',f'Pair occurrences with following round: {pair_occurrences}\n')
-        text_box.insert('end',f'NEXT D: {pair_next["D"]} | NEXT T: {pair_next["T"]}\n')
-        text_box.insert('end',f'Pair historical result: D {pair_cnt["D"]} | T {pair_cnt["T"]}\n\n')
+        text_box.insert('end','3) IMMEDIATE NEXT-ROUND CARD NUMBER COUNTS\\n','heading')
+        top=sorted(next_numbers.items(),key=lambda x:(-x[1],CARDS.index(x[0]) if x[0] in CARDS else 99))[:13]
+        text_box.insert('end',(' | '.join(f'{card} ({cnt})' for card,cnt in top) if top else 'No following-round cards found')+'\\n\\n')
 
-        text_box.insert('end','4) FINAL FORMULA\n','heading')
-        if ref:
-            if ref['matches']>=5:
-                formula='75% VIDEO 10-15 REFERENCE + 10% PAIR PATTERN + 10% PAIR HISTORY + 5% GLOBAL'
-            elif ref['matches']>=2:
-                formula='70% VIDEO 10-15 REFERENCE + 15% PAIR PATTERN + 10% PAIR HISTORY + 5% GLOBAL'
-            else:
-                formula='55% VIDEO 10-15 REFERENCE + 20% PAIR PATTERN + 15% PAIR HISTORY + 10% GLOBAL'
-        else:
-            formula='FALLBACK: existing Pair Pattern / Pair History / Global signals'
-        text_box.insert('end',f'{formula}\n')
-        text_box.insert('end',f'Final D: {100-pct:.1f}% | Final T: {pct:.1f}%\n' if pred=='T'
-                         else f'Final D: {pct:.1f}% | Final T: {100-pct:.1f}%\n')
-        text_box.insert('end',f'FINAL PREDICTION: {pred}\n\n')
+        text_box.insert('end','4) CURRENT EXCEL-ONLY PREDICTION\\n','heading')
+        text_box.insert('end',f'Prediction: {pred}\\n')
+        text_box.insert('end',f'Percentage: {pct:.1f}%\\n\\n')
 
-        text_box.insert('end','5) IMPORTANT CHECKS\n','heading')
-        text_box.insert('end','• Reference uses actual imported RESULT only; prediction history is not used as the reference.\n')
-        text_box.insert('end','• TIE is excluded from the D/T reference stream; it is never counted as D or T.\n')
-        text_box.insert('end','• The latest 10-15 actual rounds are re-matched against the complete stored history every time ANALYZE runs.\n')
-        text_box.insert('end','• The current/latest occurrence is not counted as a NEXT-result match because it has no following round.\n')
-        text_box.insert('end','• The longest available 10-15 round pattern is preferred; if none matches, the longest shorter suffix inside the same latest-15 report is used.\n')
-        text_box.insert('end','• This is a historical statistical reference, not a guaranteed future result.\n')
+        text_box.insert('end','FORMULA\\n','heading')
+        text_box.insert('end','Find exact selected Pair in imported Excel/CSV data -> take the immediately following imported round -> count D/T/TIE -> select the most frequent next result.\\n')
+        text_box.insert('end','No video reference, no global formula, no weighted formula, and no prediction-history formula is added.\\n')
 
         text_box.tag_configure('heading',foreground='#34d399',font=('Consolas',11,'bold'))
         text_box.configure(state='disabled')
@@ -1536,31 +1298,6 @@ class App:
             next_text='-'
         if hasattr(self,'top_next_label'):
             self.top_next_label.configure(text=next_text)
-
-        # FIXED VIDEO-STYLE REFERENCE: current 10-15 actual results
-        # matched against the COMPLETE imported history.
-        ref_info=self.get_video_reference()
-        if hasattr(self,'reference_pattern_label'):
-            if ref_info and ref_info.get('pattern'):
-                self.reference_pattern_label.configure(
-                    text=f"{ref_info['pattern']}  |  {ref_info['length']}R / {ref_info['matches']}M"
-                )
-            else:
-                self.reference_pattern_label.configure(text='Need 10-15 actual results')
-
-        # Keep VIDEO NUMBER PREDICTION separate from the D/T prediction.
-        number_top=self.get_video_number_prediction(ref_info)
-        if hasattr(self,'video_number_prediction'):
-            if number_top:
-                total_num=sum(cnt for _,cnt in number_top)
-                self.video_number_prediction.set('  |  '.join(f'{card} ({cnt})' for card,cnt in number_top))
-                self.video_number_prediction_pct.set(' | '.join(f'{card} {cnt/total_num*100:.1f}%' for card,cnt in number_top) if total_num else '')
-            elif ref_info:
-                self.video_number_prediction.set('No next-patti reference')
-                self.video_number_prediction_pct.set('')
-            else:
-                self.video_number_prediction.set('Need 10-15 actual results')
-                self.video_number_prediction_pct.set('')
 
         for (num,side),v in top:
             row=tk.Frame(self.chart_frame,bg='#111827'); row.pack(fill='x',pady=2)
