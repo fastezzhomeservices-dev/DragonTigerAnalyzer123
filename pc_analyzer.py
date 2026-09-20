@@ -793,7 +793,7 @@ class App:
 
         max_len=min(15,len(chain))
         windows=[]
-        for n in range(max_len,9,-1):
+        for n in range(max_len,3,-1):
             pat=chain[-n:]
             matches=[]
             for i in range(len(chain)-n):
@@ -817,9 +817,12 @@ class App:
         if not windows:
             return None
 
-        # Prefer the longest pattern with >=2 historical continuations.
+        # Prefer the longest 10-15 round reference with >=2 historical continuations.
+        # If no 10-15 match exists, use the longest shorter suffix inside the same
+        # latest-15 report so the reference does not go blank on a new sequence.
+        primary_band=[w for w in windows if w['length']>=10 and w['matches']>=2]
         strong=[w for w in windows if w['matches']>=2]
-        primary=(strong[0] if strong else windows[0])
+        primary=(primary_band[0] if primary_band else (strong[0] if strong else windows[0]))
         total=primary['D']+primary['T']
         primary['prob']={
             'D': primary['D']/total if total else 0.5,
@@ -1334,7 +1337,7 @@ class App:
         text_box.insert('end','• TIE breaks the continuous pattern chain.\n')
         text_box.insert('end','• The latest 10-15 actual rounds are re-matched against the complete stored history every time ANALYZE runs.\n')
         text_box.insert('end','• The current/latest occurrence is not counted as a NEXT-result match because it has no following round.\n')
-        text_box.insert('end','• Longer 15→10 patterns are preferred; at least 2 historical matches are preferred when available.\n')
+        text_box.insert('end','• 10-15 round patterns are preferred; if unavailable, the longest shorter suffix inside the same latest-15 report is used.\n')
         text_box.insert('end','• This is a historical statistical reference, not a guaranteed future result.\n')
 
         text_box.tag_configure('heading',foreground='#34d399',font=('Consolas',11,'bold'))
