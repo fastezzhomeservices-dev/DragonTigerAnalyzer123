@@ -789,10 +789,21 @@ class App:
         search_time=datetime.now().strftime('%d/%m/%Y %H:%M:%S')
         existing_rows=[r for r in self.data if r.get('dragon','')+r.get('tiger','')==p]
         search_sequence=[r.get('result','') for r in existing_rows if r.get('result','') in RESULTS]
+        # Store the Excel-only next-number strategy snapshot with every Pair search.
+        strategy_counts=Counter()
+        for i,r in enumerate(self.data[:-1]):
+            if clean_card(r.get('dragon',''))+clean_card(r.get('tiger','')) != p:
+                continue
+            nxt=self.data[i+1]
+            nd=clean_card(nxt.get('dragon','')); nt=clean_card(nxt.get('tiger',''))
+            if nd: strategy_counts[nd] += 1
+            if nt: strategy_counts[nt] += 1
+        strategy_top=sorted(strategy_counts.items(),key=lambda x:(-x[1],CARDS.index(x[0]) if x[0] in CARDS else 99))[:4]
         self.pair_history.append({
             'time':search_time,'pair':p,
             'prediction': '',
-            'sequence': search_sequence[-30:]
+            'sequence': search_sequence[-30:],
+            'number_strategy': ' | '.join(f'{n} ({cnt})' for n,cnt in strategy_top) if strategy_top else 'NO NEXT NUMBER DATA'
         })
         self.pair_history=self.pair_history[-300:]
         self.render_pair_history()
@@ -925,7 +936,7 @@ class App:
         # Pair Result popup: keep EDIT, SAVE and DELETE RESULT visible together.
         win=tk.Toplevel(self.root)
         win.title('Pair Result')
-        win.geometry('260x430')
+        win.geometry('260x475')
         win.resizable(False,False)
         win.configure(bg='white')
         try:
@@ -934,7 +945,7 @@ class App:
             screen_w=self.root.winfo_screenwidth()
             screen_h=self.root.winfo_screenheight()
             x=min(x, max(10, screen_w-270))
-            y=min(y, max(10, screen_h-445))
+            y=min(y, max(10, screen_h-490))
             win.geometry(f'260x430+{x}+{y}')
         except Exception:
             pass
@@ -977,6 +988,11 @@ class App:
                  font=('Segoe UI',7,'bold')).pack(pady=(0,1))
         tk.Label(win,text=f'Dragon {self.oe(d) if d else "-"} | Tiger {self.oe(t) if t else "-"}',
                  bg='white',fg='#475569',font=('Segoe UI',6,'bold')).pack(pady=1)
+        tk.Label(win,text='NUMBER PREDICTION STRATEGY HISTORY',
+                 bg='white',fg='#0758d9',font=('Segoe UI',8,'bold')).pack(pady=(4,1))
+        tk.Label(win,text=item.get('number_strategy','NO NEXT NUMBER DATA'),
+                 bg='white',fg='#111827',font=('Segoe UI',8,'bold'),wraplength=220,
+                 justify='left').pack(padx=12,pady=(0,4))
 
         # Result is fixed from the actual Dragon/Tiger cards; no manual override is allowed.
         def delete_this_result():
