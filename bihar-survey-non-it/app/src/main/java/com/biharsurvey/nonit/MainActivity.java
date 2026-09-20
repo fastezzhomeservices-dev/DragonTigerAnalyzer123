@@ -33,7 +33,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
- static final String APP="BIHAR SURVEY NON IT", LOGIN_ID="ADMIN", LOGIN_PASSWORD="ADMIN";
+ static final String APP="BIHAR SURVEY NON IT";
+ static final LinkedHashMap<String,String> USERS=new LinkedHashMap<>();
+ static { USERS.put("ADMIN1","India@a123"); USERS.put("ADMIN2","India@b123"); USERS.put("ADMIN3","India@c123"); USERS.put("ADMIN4","India@d123"); USERS.put("ADMIN5","India@e123"); USERS.put("ADMIN6","India@f123"); USERS.put("ADMIN7","India@g123"); USERS.put("ADMIN8","India@h123"); USERS.put("ADMIN9","India@i123"); USERS.put("ADMIN10","India@j123"); USERS.put("ADMIN11","India@k123"); USERS.put("ADMIN12","India@l123"); USERS.put("ADMIN13","India@m123"); USERS.put("ADMIN14","India@n123"); USERS.put("ADMIN15","India@o123"); USERS.put("ADMIN16","India@p123"); USERS.put("ADMIN17","India@q123"); USERS.put("ADMIN18","India@r123"); USERS.put("ADMIN19","India@s123"); USERS.put("ADMIN20","India@t123"); }
  LinearLayout root,body; EditText office,section,surveyor; TextView gps,countText; double lat,lon; String activeCategory="Building",suggestedType="";
  static final int MAX_BATCH=500;
  ArrayList<Entry> batch=new ArrayList<>();
@@ -55,20 +57,21 @@ public class MainActivity extends AppCompatActivity {
   HEADERS.put("Residential Colony", new String[]{"Unique Id","ENTRYDATE","Surveyor","Hierarchy","Discom/ Organization Name","Zone Name","Circle Name","Division Name","Subdivision Name","Section Name","State","District Name","Block Name","Gram Panchyat Name","Village Name","Pincode","Feature Code","Address","Store Name","Serial Number","Gis Unique Id","Area Acres","Land Type","Residual Value","Condition","Legal Status","Status","Encroachment","Commissioning Date","In-Operational Date","Scheme Name","Registration Date","Purchase Order Date","Remarks","Purchase Number","House Type","Parking","No of House/Flat","Colony Name","Fitness Valid Date","Registry No","Is Registration Date Available","Colony Type","Colony Type Other","House Type Other","Name1","Value1","Name2","Value2","Name3","Value3","Name4","Value4","Name5","Value5"});
  }
  boolean loggedIn(){return getPreferences(0).getBoolean("login",false);}
+ String currentUser(){return getPreferences(0).getString("user_id","");}
 
  void login(){
   root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(dp(24),dp(55),dp(24),dp(24)); root.setBackgroundColor(0xfff3f7fb);
   TextView logo=title(APP); logo.setTextSize(25); root.addView(logo); root.addView(title("Secure Common Login"));
   EditText u=input("Login ID"); EditText p=input("Password"); p.setInputType(129); root.addView(cardWrap(u)); root.addView(cardWrap(p));
   Button b=primary("LOGIN"); root.addView(b,new LinearLayout.LayoutParams(-1,dp(52)));
-  b.setOnClickListener(v->{if(LOGIN_ID.equals(u.getText().toString().trim())&&LOGIN_PASSWORD.equals(p.getText().toString())){getPreferences(0).edit().putBoolean("login",true).apply();home();requestPerms();}else Toast.makeText(this,"Invalid common login",Toast.LENGTH_SHORT).show();});
+  b.setOnClickListener(v->{String uid=u.getText().toString().trim().toUpperCase(Locale.US); String pw=p.getText().toString(); if(USERS.containsKey(uid)&&USERS.get(uid).equals(pw)){getPreferences(0).edit().putBoolean("login",true).putString("user_id",uid).apply();home();requestPerms();}else Toast.makeText(this,"Invalid common login",Toast.LENGTH_SHORT).show();});
   setContentView(root);
  }
 
  void home(){
   root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(0xfff3f7fb);
   LinearLayout bar=new LinearLayout(this); bar.setPadding(dp(16),dp(14),dp(16),dp(8)); bar.setGravity(Gravity.CENTER_VERTICAL);
-  TextView t=title(APP); t.setTextSize(20); bar.addView(t,new LinearLayout.LayoutParams(0,-2,1));
+  TextView t=title(APP); t.setTextSize(20); bar.addView(t,new LinearLayout.LayoutParams(0,-2,1)); TextView u=label("User: "+currentUser()); u.setTextSize(12); bar.addView(u);
   Button ex=smallButton("EXPORT EXCEL"); bar.addView(ex); ex.setOnClickListener(v->exportExcel());
   root.addView(bar);
   countText=new TextView(this); countText.setText("Saved entries: "+db.count()); countText.setTextColor(0xff35546f); countText.setTextSize(14); countText.setPadding(dp(18),0,dp(18),dp(8)); root.addView(countText);
