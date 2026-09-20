@@ -441,10 +441,11 @@ class App:
         # Occurrence report — same table layout, with compact coloured result circles.
         report=tk.LabelFrame(content,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg=PANEL,fg=YELLOW,
                              font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        report.pack(fill='x',padx=12,pady=2)
-        report_table=tk.Frame(report,bg=PANEL,height=250)
-        report_table.pack(fill='x',padx=8,pady=3)
-        report_table.pack_propagate(False)
+        # Use all remaining vertical dashboard space for the ROUND ID / NEXT columns.
+        # This keeps the ROUND ID column extended to the bottom instead of leaving blank space.
+        report.pack(fill='both',expand=True,padx=12,pady=2)
+        report_table=tk.Frame(report,bg=PANEL)
+        report_table.pack(fill='both',expand=True,padx=8,pady=3)
 
         rcols=('ROUND ID','PREVIOUS 3','MATCH','NEXT 1','NEXT 2','NEXT 3','NEXT 4','NEXT 5','NEXT 6')
         rwidths=[90,250,90,90,90,90,90,90,90]
