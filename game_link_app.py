@@ -3,6 +3,9 @@ import subprocess
 import tkinter as tk
 from tkinter import messagebox
 import webbrowser
+import time
+import threading
+import ctypes
 
 try:
     import webview
@@ -29,6 +32,10 @@ class GameLinkApp:
         self.entry.pack(side="left", fill="x", expand=True, ipady=9, padx=(0, 8))
         tk.Button(row, text="OPEN GAME", command=self.open_game, bg="#00a8ff", fg="white",
                   font=("Segoe UI", 10, "bold"), relief="flat", padx=16, pady=9).pack(side="left")
+        tk.Button(row, text="GAME LEFT / DASHBOARD RIGHT", command=self.open_split,
+                  bg="#8e44ad", fg="white", font=("Segoe UI", 10, "bold"),
+                  relief="flat", padx=12, pady=9).pack(side="left", padx=(8, 0))
+
         buttons = tk.Frame(self.root, bg="#071a2b")
         buttons.pack(pady=18)
         tk.Button(buttons, text="OPEN ANALYZER APP", command=self.open_analyzer,
@@ -55,6 +62,72 @@ class GameLinkApp:
         if u:
             webbrowser.open(u)
 
+    def find_analyzer_exe(self):
+        candidates = [
+            os.path.join(os.environ.get("ProgramFiles", ""), "Dragon Tiger Analyzer v2.0", "DragonTigerAnalyzerPC.exe"),
+            os.path.join(os.environ.get("ProgramFiles(x86)", ""), "Dragon Tiger Analyzer v2.0", "DragonTigerAnalyzerPC.exe"),
+        ]
+        for path in candidates:
+            if path and os.path.exists(path):
+                return path
+        return None
+
+    def _find_analyzer_window(self):
+        target = "Dragon Tiger Analyzer - PC v2.0"
+        found = []
+        user32 = ctypes.windll.user32
+        EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+        def callback(hwnd, lparam):
+            n = user32.GetWindowTextLengthW(hwnd)
+            if n:
+                buf = ctypes.create_unicode_buffer(n + 1)
+                user32.GetWindowTextW(hwnd, buf, n + 1)
+                if target.lower() in buf.value.lower():
+                    found.append(hwnd)
+                    return False
+            return True
+        user32.EnumWindows(EnumWindowsProc(callback), 0)
+        return found[0] if found else None
+
+    def _move_analyzer_right(self):
+        if os.name != "nt":
+            return
+        user32 = ctypes.windll.user32
+        sw = user32.GetSystemMetrics(0)
+        sh = user32.GetSystemMetrics(1)
+        left_w = max(500, sw // 2)
+        right_w = sw - left_w
+        for _ in range(80):
+            hwnd = self._find_analyzer_window()
+            if hwnd:
+                user32.MoveWindow(hwnd, left_w, 0, right_w, sh, True)
+                return
+            time.sleep(0.25)
+
+    def open_split(self):
+        u = self.valid_url()
+        if not u:
+            return
+        analyzer = self.find_analyzer_exe()
+        if not analyzer:
+            messagebox.showinfo("Analyzer App",
+                                "Analyzer app was not found. Install the Analyzer app first.")
+            return
+        try:
+            subprocess.Popen([analyzer])
+            threading.Thread(target=self._move_analyzer_right, daemon=True).start()
+            if webview is None:
+                webbrowser.open(u)
+                return
+            sw = ctypes.windll.user32.GetSystemMetrics(0) if os.name == "nt" else 1920
+            sh = ctypes.windll.user32.GetSystemMetrics(1) if os.name == "nt" else 1080
+            left_w = max(500, sw // 2)
+            webview.create_window("Game - Left Side", u, x=0, y=0,
+                                  width=left_w, height=sh, min_size=(500, 500), resizable=True)
+            webview.start()
+        except Exception as e:
+            messagebox.showerror("Split View", f"Unable to open split view: {e}")
+
     def open_game(self):
         u = self.valid_url()
         if not u:
@@ -69,14 +142,10 @@ class GameLinkApp:
             self.open_browser()
 
     def open_analyzer(self):
-        candidates = [
-            os.path.join(os.environ.get("ProgramFiles", ""), "Dragon Tiger Analyzer v2.0", "DragonTigerAnalyzerPC.exe"),
-            os.path.join(os.environ.get("ProgramFiles(x86)", ""), "Dragon Tiger Analyzer v2.0", "DragonTigerAnalyzerPC.exe"),
-        ]
-        for path in candidates:
-            if path and os.path.exists(path):
-                subprocess.Popen([path])
-                return
+        path = self.find_analyzer_exe()
+        if path:
+            subprocess.Popen([path])
+            return
         messagebox.showinfo("Analyzer App",
                             "Analyzer app was not found in the standard install location.\n"
                             "Start it separately from its desktop shortcut.")
