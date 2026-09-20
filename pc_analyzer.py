@@ -398,7 +398,6 @@ class App:
         tk.Label(refbar,textvariable=self.prediction_pct,bg=PANEL,fg=YELLOW,font=('Segoe UI',9,'bold'),
                  width=8).pack(side='left',padx=(0,8))
         ref_combo.bind('<<ComboboxSelected>>',run_reference_search)
-
         # VIDEO NUMBER/PATTI PREDICTION is deliberately separate from the existing
         # D/T prediction.  The D/T prediction remains driven by the normal app
         # formula, while this box reports the card-number signal derived only from
@@ -897,8 +896,7 @@ class App:
             if res in ('D','T'):
                 chain_rows.append((idx,row,res))
         n=int(video_ref.get('length',0) or 0)
-        pattern=str(video_ref.get('pattern','') or '')
-        if n < 4 or len(chain_rows) <= n or not pattern:
+        pattern=str(video_ref.get('pattern','') or '')        if n < 4 or len(chain_rows) <= n or not pattern:
             return []
 
         counts=Counter()
@@ -1225,10 +1223,15 @@ class App:
         trophy.create_rectangle(17,42,36,45,fill='#16a34a',outline='')
         trophy.create_text(27,27,text='★',fill='white',font=('Segoe UI',7,'bold'))
 
-        result_color=RESULT_COLORS.get(pred,'#7c3aed')
-        result_label=tk.Label(win,text=f'Result: {pred}',bg='white',fg=result_color,
+        # IMPORTANT: Pair Result must always come from the selected cards,
+        # never from the statistical prediction. Example: 8A => Dragon 8 > Tiger A => D.
+        actual_pair_result=result_from_cards(d,t) or 'TIE'
+        result_color=RESULT_COLORS.get(actual_pair_result,'#7c3aed')
+        result_label=tk.Label(win,text=f'Result: {actual_pair_result}',bg='white',fg=result_color,
                  font=('Segoe UI',8,'bold'))
         result_label.pack(pady=(1,1))
+        tk.Label(win,text=f'Prediction: {pred}',bg='white',fg='#475569',
+                 font=('Segoe UI',7,'bold')).pack(pady=(0,1))
         tk.Label(win,text=f'Dragon {self.oe(d) if d else "-"} | Tiger {self.oe(t) if t else "-"}',
                  bg='white',fg='#475569',font=('Segoe UI',6,'bold')).pack(pady=1)
 
@@ -1297,8 +1300,7 @@ class App:
         for item in items:
             slot=tk.Frame(strip,bg='#111827',width=52,height=50,cursor='hand2')
             slot.pack(side='left',fill='y',padx=0)
-            slot.pack_propagate(False)
-            pred=normalize_result(item.get('prediction','')) or 'TIE'
+            slot.pack_propagate(False)            pred=normalize_result(item.get('prediction','')) or 'TIE'
             cv=self._circle(slot,pred,40)
             cv.pack(anchor='center',pady=2)
             cv.bind('<Button-1>',lambda e,it=item:self._show_pair_result_popup(it))
