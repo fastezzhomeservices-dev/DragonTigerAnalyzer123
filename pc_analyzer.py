@@ -756,9 +756,33 @@ class App:
                 next_results[nr] += 1
         if not next_results:
             return 'NO PREDICTION',0.0
+
         pred=max(RESULTS,key=lambda x:next_results[x])
         total=sum(next_results.values()) or 1
-        return pred,next_results[pred]/total*100
+        pct=next_results[pred]/total*100
+
+        # STREAK OVERRIDE:
+        # If the latest imported Excel/CSV history has 6 or more consecutive
+        # D results, predict T; if it has 6 or more consecutive T results,
+        # predict D. TIE breaks the D/T streak.
+        streak_side=''
+        streak_count=0
+        for recent in reversed(self.data):
+            rr=normalize_result(recent.get('result'))
+            if rr not in ('D','T'):
+                break
+            if not streak_side:
+                streak_side=rr
+                streak_count=1
+            elif rr==streak_side:
+                streak_count += 1
+            else:
+                break
+        if streak_count >= 6:
+            pred='T' if streak_side=='D' else 'D'
+            pct=100.0
+
+        return pred,pct
     def analyze(self):
         p=self.pair.get().upper().strip()
         # Record every Pair Analysis search without changing the existing statistical analysis.
