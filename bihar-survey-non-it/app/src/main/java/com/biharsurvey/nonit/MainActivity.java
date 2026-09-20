@@ -36,8 +36,10 @@ public class MainActivity extends AppCompatActivity {
  static final String APP="BIHAR SURVEY NON IT";
  static final LinkedHashMap<String,String> USERS=new LinkedHashMap<>();
  static { USERS.put("ADMIN1","India@a123"); USERS.put("ADMIN2","India@b123"); USERS.put("ADMIN3","India@c123"); USERS.put("ADMIN4","India@d123"); USERS.put("ADMIN5","India@e123"); USERS.put("ADMIN6","India@f123"); USERS.put("ADMIN7","India@g123"); USERS.put("ADMIN8","India@h123"); USERS.put("ADMIN9","India@i123"); USERS.put("ADMIN10","India@j123"); USERS.put("ADMIN11","India@k123"); USERS.put("ADMIN12","India@l123"); USERS.put("ADMIN13","India@m123"); USERS.put("ADMIN14","India@n123"); USERS.put("ADMIN15","India@o123"); USERS.put("ADMIN16","India@p123"); USERS.put("ADMIN17","India@q123"); USERS.put("ADMIN18","India@r123"); USERS.put("ADMIN19","India@s123"); USERS.put("ADMIN20","India@t123"); }
- LinearLayout root,body; EditText office,section,surveyor; TextView gps,countText; double lat,lon; String activeCategory="Building",suggestedType="";
+ LinearLayout root,body; AutoCompleteTextView office,section; EditText surveyor; TextView gps,countText; double lat,lon; String activeCategory="Building",suggestedType="";
  static final int MAX_BATCH=500;
+ static final String PREF_LOCATIONS="survey_locations";
+ static final String PREF_SECTIONS_PREFIX="survey_sections_";
  ArrayList<Entry> batch=new ArrayList<>();
  SurveyDbHelper db; ExecutorService io=Executors.newSingleThreadExecutor();
  Uri pendingPhotoUri; String pendingPhotoPath="";
@@ -102,8 +104,8 @@ public class MainActivity extends AppCompatActivity {
  void form(String cat){
   activeCategory=cat; batch.clear(); suggestedType=""; body.removeAllViews(); body.addView(title(cat+"  •  Survey"));
   LinearLayout info=sectionCard(); body.addView(info);
-  office=input("Office / Location"); section=input("Section"); surveyor=input("Surveyor name");
-  info.addView(label("OFFICE / LOCATION")); info.addView(office); info.addView(label("SECTION")); info.addView(section); info.addView(label("SURVEYOR")); info.addView(surveyor);
+  office=dropdownInput("Office / Location"); section=dropdownInput("Section"); surveyor=input("Surveyor name");
+  info.addView(label("OFFICE / LOCATION  •  ADDRESS DROPDOWN")); info.addView(office); info.addView(label("SECTION  •  SAVED DROPDOWN")); info.addView(section); info.addView(label("SURVEYOR")); info.addView(surveyor); setupAddressDropdowns();
   gps=new TextView(this); gps.setText("GPS: waiting for location…"); gps.setTextColor(0xff2d5d3d); gps.setPadding(dp(10),dp(10),dp(10),dp(10)); info.addView(gps);
   LinearLayout actions=sectionCard(); body.addView(actions);
   Button cam=primary("TAKE PHOTO + OCR / IDENTIFY"); actions.addView(cam,new LinearLayout.LayoutParams(-1,dp(54))); cam.setOnClickListener(v->startCamera());
@@ -126,6 +128,9 @@ public class MainActivity extends AppCompatActivity {
   Entry e=new Entry();e.category=cat;e.lat=lat;e.lon=lon;e.time=System.currentTimeMillis();e.photoPath=pendingPhotoPath;
   for(String k:HEADERS.get(cat))e.values.put(k,"");
   String sec=section.getText().toString().trim(),loc=office.getText().toString().trim(),sv=surveyor.getText().toString().trim();
+  if(loc.isEmpty()){Toast.makeText(this,"Office / Address select ya enter karein.",Toast.LENGTH_SHORT).show();return;}
+  if(sec.isEmpty()){Toast.makeText(this,"Section select ya enter karein.",Toast.LENGTH_SHORT).show();return;}
+  savePrefList(PREF_LOCATIONS,loc); savePrefList(PREF_SECTIONS_PREFIX+cleanKey(loc),sec);
   e.values.put("Surveyor",sv);e.values.put("Section Name",sec);e.values.put("Room Section",sec);e.values.put("Address",loc);e.values.put("Building Name",loc);e.values.put("Office",loc);e.values.put("ENTRYDATE",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.US).format(new Date(e.time)));e.values.put("Item Type",suggestedType);e.values.put("Equipment Type",suggestedType);e.values.put("Unique Id",String.valueOf(e.time));
   batch.add(e);pendingPhotoPath="";pendingPhotoUri=null;suggestedType="";if(countText!=null)countText.setText("Current batch: "+batch.size()+" / "+MAX_BATCH);Toast.makeText(this,"Item added. Total: "+batch.size(),Toast.LENGTH_SHORT).show();
  }
@@ -169,6 +174,12 @@ public class MainActivity extends AppCompatActivity {
    catch(Exception e){runOnUiThread(()->{p.dismiss();Toast.makeText(this,"Excel export failed: "+e.getMessage(),Toast.LENGTH_LONG).show();});}});
  }
 
+ AutoCompleteTextView dropdownInput(String hint){ AutoCompleteTextView v=new AutoCompleteTextView(this); v.setHint(hint); v.setTextSize(15); v.setSingleLine(true); v.setThreshold(0); v.setPadding(dp(12),0,dp(12),0); GradientDrawable g=new GradientDrawable(); g.setColor(Color.WHITE); g.setCornerRadius(dp(10)); g.setStroke(dp(1),0xffcbd9e5); v.setBackground(g); LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(50)); p.setMargins(0,dp(4),0,dp(8)); v.setLayoutParams(p); return v; }
+ ArrayList<String> prefList(String key){ String raw=getPreferences(0).getString(key,""); ArrayList<String>a=new ArrayList<>(); if(!raw.isEmpty()) for(String x:raw.split("\\u001F")) if(!x.trim().isEmpty()) a.add(x); return a; }
+ void savePrefList(String key,String value){ value=value==null?"":value.trim(); if(value.isEmpty())return; ArrayList<String>a=prefList(key); for(String x:a) if(x.equalsIgnoreCase(value)) return; a.add(value); StringBuilder b=new StringBuilder(); for(String x:a){if(b.length()>0)b.append("\\u001F"); b.append(x);} getPreferences(0).edit().putString(key,b.toString()).apply(); }
+ void bindDropdown(AutoCompleteTextView v,ArrayList<String> items){ v.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_dropdown_item_1line,items)); v.setOnClickListener(x->v.showDropDown()); v.setOnFocusChangeListener((x,f)->{if(f)v.showDropDown();}); }
+ void setupAddressDropdowns(){ bindDropdown(office,prefList(PREF_LOCATIONS)); bindDropdown(section,prefList(PREF_SECTIONS_PREFIX+cleanKey(office.getText().toString()))); office.setOnItemClickListener((p,v,pos,id)->{bindDropdown(section,prefList(PREF_SECTIONS_PREFIX+cleanKey(office.getText().toString()))); section.showDropDown();}); }
+ String cleanKey(String x){return x==null?"":x.trim().replaceAll("[^A-Za-z0-9]+","_"); }
  String valueForHeader(String h,SurveyDbHelper.EntryRow e){if("Unique Id".equalsIgnoreCase(h))return e.uniqueId;if("ENTRYDATE".equalsIgnoreCase(h))return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.US).format(new Date(e.time));if("Surveyor".equalsIgnoreCase(h))return e.surveyor;if("Section Name".equalsIgnoreCase(h)||"Sectio Name".equalsIgnoreCase(h)||"Room Section".equalsIgnoreCase(h))return e.section;if("Address".equalsIgnoreCase(h)||"New Address".equalsIgnoreCase(h)||"Building Name".equalsIgnoreCase(h)||"Office".equalsIgnoreCase(h))return e.office;if("Item Type".equalsIgnoreCase(h)||"Equipment Type".equalsIgnoreCase(h))return e.itemType;return "";}
 
  void requestPerms(){perms.launch(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.CAMERA});}
