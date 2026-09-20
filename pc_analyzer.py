@@ -793,9 +793,8 @@ class App:
         Fixed VIDEO-REPORT style reference engine.
         Uses the latest 10-15 ACTUAL D/T results from imported data and
         searches the COMPLETE stored history for the same contiguous pattern.
-        TIE breaks the chain. The longest available window is preferred,
-        while a minimum of 2 historical matches is preferred to avoid a
-        one-match overfit.
+        TIE is excluded from the D/T reference stream and does not become D or T.
+        The longest available window is preferred, with shorter-window fallback.
         """
         # Build the D/T reference stream. TIE is excluded from the D/T pattern;
         # it does not become D or T and therefore cannot bias the pattern counts.
@@ -1349,7 +1348,7 @@ class App:
 
         text_box.insert('end','1) FIXED VIDEO-STYLE CURRENT REFERENCE\n','heading')
         if ref:
-            text_box.insert('end',f'Latest 15-chain (after last TIE): {ref.get("chain","-")}\n')
+            text_box.insert('end',f'Latest 15-chain (D/T only; TIE excluded): {ref.get("chain","-")}\n')
             text_box.insert('end',f'Selected pattern: {ref["pattern"]}\n')
             text_box.insert('end',f'Pattern length: {ref["length"]} rounds\n')
             text_box.insert('end',f'Historical NEXT matches: {ref["matches"]}\n')
@@ -1365,7 +1364,12 @@ class App:
             text_box.insert('end','No exact 10-15 historical continuation found yet.\n')
         text_box.insert('end','\n')
 
-        text_box.insert('end','2) CURRENT PAIR SECONDARY SIGNAL\n','heading')
+        text_box.insert('end','2) VIDEO NUMBER / PATTI PREDICTION\n','heading')
+        num_top=self.get_video_number_prediction(ref)
+        text_box.insert('end',(' | '.join(f'{card} ({cnt})' for card,cnt in num_top) if num_top else 'No next-patti reference available') + '\n')
+        text_box.insert('end','This number prediction is separate from the normal D/T prediction.\n\n')
+
+        text_box.insert('end','3) CURRENT PAIR SECONDARY SIGNAL\n','heading')
         pair_next=Counter()
         pair_occurrences=0
         for i,r in enumerate(self.data[:-1]):
@@ -1380,7 +1384,7 @@ class App:
         text_box.insert('end',f'NEXT D: {pair_next["D"]} | NEXT T: {pair_next["T"]}\n')
         text_box.insert('end',f'Pair historical result: D {pair_cnt["D"]} | T {pair_cnt["T"]}\n\n')
 
-        text_box.insert('end','3) FINAL FORMULA\n','heading')
+        text_box.insert('end','4) FINAL FORMULA\n','heading')
         if ref:
             if ref['matches']>=5:
                 formula='75% VIDEO 10-15 REFERENCE + 10% PAIR PATTERN + 10% PAIR HISTORY + 5% GLOBAL'
@@ -1395,7 +1399,7 @@ class App:
                          else f'Final D: {pct:.1f}% | Final T: {100-pct:.1f}%\n')
         text_box.insert('end',f'FINAL PREDICTION: {pred}\n\n')
 
-        text_box.insert('end','4) IMPORTANT CHECKS\n','heading')
+        text_box.insert('end','5) IMPORTANT CHECKS\n','heading')
         text_box.insert('end','• Reference uses actual imported RESULT only; prediction history is not used as the reference.\n')
         text_box.insert('end','• TIE is excluded from the D/T reference stream; it is never counted as D or T.\n')
         text_box.insert('end','• The latest 10-15 actual rounds are re-matched against the complete stored history every time ANALYZE runs.\n')
