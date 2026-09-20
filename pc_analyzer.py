@@ -56,6 +56,13 @@ def card_rank(card):
     return CARDS.index(card)
 
 
+def pair_to_cards(pair):
+    p=str(pair or '').strip().upper().replace(' ','')
+    if p.startswith('10') and len(p)>=3:
+        return clean_card('10'),clean_card(p[2:])
+    if len(p)>=2:
+        return clean_card(p[:1]),clean_card(p[1:])
+    return '', ''
 def result_from_cards(dragon, tiger):
     """
     Always derive D/T/TIE from the actual Dragon and Tiger cards.
@@ -1086,12 +1093,7 @@ class App:
         pred=normalize_result(item.get('prediction','')) or 'TIE'
         # Decode the searched Pair Patti correctly, including 10+10 ("1010").
         # Examples: 1010 -> Dragon 10 / Tiger 10, 10J -> 10 / J, JQ -> J / Q.
-        if pair.startswith('10') and len(pair) >= 3:
-            d=clean_card('10')
-            t=clean_card(pair[2:])
-        else:
-            d=clean_card(pair[:1])
-            t=clean_card(pair[1:])
+        d,t=pair_to_cards(pair)
         if not d or not t:
             d=clean_card(item.get('dragon',''))
             t=clean_card(item.get('tiger',''))
@@ -1221,11 +1223,8 @@ class App:
             # History circle shows ACTUAL card result, not statistical prediction.
             # Example: 5Q => Dragon 5 < Tiger Q => T.
             pair=str(item.get('pair','')).strip().upper().replace(' ','')
-            if pair.startswith('10') and len(pair) >= 3:
-                hist_d='10'; hist_t=pair[2:]
-            else:
-                hist_d=pair[:1]; hist_t=pair[1:]
-            actual_hist_result=result_from_cards(hist_d,hist_t) or 'TIE'
+            hist_d,hist_t=pair_to_cards(pair)
+            actual_hist_result=result_from_cards(hist_d,hist_t) or normalize_result(item.get('result')) or 'TIE'
             cv=self._circle(slot,actual_hist_result,40)
             cv.pack(anchor='center',pady=2)
             cv.bind('<Button-1>',lambda e,it=item:self._show_pair_result_popup(it))
