@@ -399,7 +399,7 @@ class App:
                                               highlightthickness=1,highlightbackground='#34d399')
         self.reference_pattern_frame.pack(side='right',fill='y',padx=(8,0))
         self.reference_pattern_frame.pack_propagate(False)
-        tk.Label(self.reference_pattern_frame,text='REFERENCE PATTERN  |  PAIR HISTORY',
+        tk.Label(self.reference_pattern_frame,text='VIDEO REFERENCE  |  10-15 RESULTS',
                  bg='#0f766e',fg='white',font=('Segoe UI',8,'bold')).pack(anchor='w',padx=8,pady=(4,0))
         self.reference_pattern_label=tk.Label(self.reference_pattern_frame,text='-',
                                               bg='#0f766e',fg='white',font=('Segoe UI',10,'bold'),
@@ -771,12 +771,68 @@ class App:
         pred=max(('D','T'),key=lambda x:probs[x])
         return pred,probs[pred]*100
 
+    def get_video_reference(self):
+        """
+        Fixed VIDEO-REPORT style reference engine.
+        Uses the latest 10-15 ACTUAL D/T results from imported data and
+        searches the COMPLETE stored history for the same contiguous pattern.
+        TIE breaks the chain. The longest available window is preferred,
+        while a minimum of 2 historical matches is preferred to avoid a
+        one-match overfit.
+        """
+        # Build the latest contiguous D/T chain. A TIE breaks the chain.
+        chain=[]
+        for row in self.data:
+            res=normalize_result(row.get('result'))
+            if res=='TIE':
+                chain=[]
+            elif res in ('D','T'):
+                chain.append(res)
+        if len(chain)<10:
+            return None
+
+        max_len=min(15,len(chain))
+        windows=[]
+        for n in range(max_len,9,-1):
+            pat=chain[-n:]
+            matches=[]
+            for i in range(len(chain)-n):
+                if chain[i:i+n] != pat:
+                    continue
+                nxt=chain[i+n] if i+n < len(chain) else ''
+                if nxt in ('D','T'):
+                    matches.append((i+1,nxt))
+            if matches:
+                cnt=Counter(x[1] for x in matches)
+                windows.append({
+                    'length':n,
+                    'pattern':''.join(pat),
+                    'matches':len(matches),
+                    'D':cnt['D'],
+                    'T':cnt['T'],
+                    'TIE':0,
+                    'rows':matches,
+                })
+
+        if not windows:
+            return None
+
+        # Prefer the longest pattern with >=2 historical continuations.
+        strong=[w for w in windows if w['matches']>=2]
+        primary=(strong[0] if strong else windows[0])
+        total=primary['D']+primary['T']
+        primary['prob']={
+            'D': primary['D']/total if total else 0.5,
+            'T': primary['T']/total if total else 0.5,
+        }
+        primary['all_windows']=windows
+        primary['chain']=''.join(chain[-15:])
+        return primary
+
     def pattern_prediction(self, pair_rows):
-        # PRIMARY FORMULA: LAST 4-5 PAIR SEARCH REFERENCES -> EXACT D/T PATTERN.
-        # The latest search itself is excluded. Each older Pair Search contributes
-        # its latest real D/T result. The resulting 4-5 sequence is searched in
-        # the complete imported result history and the NEXT result is used.
-        # TIE never enters a D/T pattern.
+        # PRIMARY FORMULA: FIXED VIDEO-REPORT STYLE 10-15 RESULT REFERENCE.
+        # The latest 10-15 actual D/T results are matched against the COMPLETE
+        # imported history. Longest exact match is preferred; TIE breaks chain.
         pair_cnt=Counter(
             normalize_result(r.get('result'))
             for r in pair_rows
@@ -785,48 +841,10 @@ class App:
         pair_total=sum(pair_cnt.values())
         pair_prob={r:(pair_cnt[r]+1)/(pair_total+2) for r in ('D','T')}
 
-        # 1) Build the reference pattern from the previous Pair Search records.
-        old_history=self.pair_history[:-1] if self.pair_history else []
-        refs=[]
-        for item in old_history[-5:]:
-            seq_ref=[
-                normalize_result(v) for v in item.get('sequence',[])
-                if normalize_result(v) in ('D','T')
-            ]
-            if seq_ref:
-                refs.append(seq_ref[-1])
+        video_ref=self.get_video_reference()
+        reference_prob=video_ref['prob'] if video_ref else None
 
-        # 2) Search the exact 5-reference pattern first; if unavailable,
-        # fall back to the last 4 references. Longer exact matches win.
-        reference_scores=Counter()
-        reference_matches=0
-        for n in (5,4):
-            if len(refs)<n:
-                continue
-            pat=refs[-n:]
-            for i in range(len(self.data)-n):
-                hist=[]
-                for j in range(i,i+n):
-                    rr=normalize_result(self.data[j].get('result'))
-                    if rr not in ('D','T'):
-                        break
-                    hist.append(rr)
-                if len(hist)!=n or hist!=pat:
-                    continue
-                nxt=normalize_result(self.data[i+n].get('result'))
-                if nxt in ('D','T'):
-                    # Exact 5-pattern is stronger than exact 4-pattern.
-                    reference_scores[nxt]+=n*n
-                    reference_matches+=1
-            if reference_scores:
-                break
-
-        reference_prob=None
-        if reference_scores:
-            total=sum(reference_scores.values())
-            reference_prob={r:reference_scores[r]/total for r in ('D','T')}
-
-        # 3) Same-Pair transition pattern, using the current searched pair only.
+        # Same-pair transition pattern is a secondary signal only.
         pair_seq=[
             normalize_result(r.get('result'))
             for r in pair_rows
@@ -846,15 +864,14 @@ class App:
         else:
             pair_pattern_prob=pair_prob
 
-        # 4) Card-level historical signal for the searched Pair.
+        # Card-level secondary signal.
         search_pair=str(self.pair.get() or '').strip().upper()
         if search_pair.startswith('10') and len(search_pair)>=3:
             search_d='10'; search_t=search_pair[2:]
         else:
             search_d=search_pair[:1]; search_t=search_pair[1:]
 
-        card_scores=Counter()
-        card_total=0
+        card_scores=Counter(); card_total=0
         for row in self.data:
             res=normalize_result(row.get('result'))
             if res not in ('D','T'):
@@ -867,12 +884,12 @@ class App:
                 card_scores[res]+=1; card_total+=1
         card_prob={r:(card_scores[r]+1)/(card_total+2) for r in ('D','T')}
 
-        # 5) Global recent-pattern fallback.
+        # Global recent-pattern backup.
         seq=[normalize_result(r.get('result')) for r in self.data]
         global_scores=Counter()
-        for n in range(min(6,len(seq)),1,-1):
+        for n in range(min(8,len(seq)),1,-1):
             pat=seq[-n:]
-            if len(pat)!=n or any(x not in ('D','T') for x in pat):
+            if any(x not in ('D','T') for x in pat):
                 continue
             for i in range(len(seq)-n):
                 if seq[i:i+n]==pat:
@@ -885,15 +902,20 @@ class App:
             gp={r:global_scores[r]/total for r in ('D','T')}
             global_prob={r:0.70*gp[r]+0.30*global_prob[r] for r in ('D','T')}
 
-        # FINAL:
-        # Exact 5/4 Pair-Search reference pattern is PRIMARY when available.
-        # This prevents a same-Pair majority from simply repeating itself.
+        # VIDEO REFERENCE IS FIXED PRIMARY SIGNAL.
+        # Other signals only stabilize the result when the reference sample is small.
         if reference_prob is not None:
+            if video_ref['matches']>=5:
+                rw,pw,cw,gw=0.75,0.10,0.10,0.05
+            elif video_ref['matches']>=2:
+                rw,pw,cw,gw=0.70,0.15,0.10,0.05
+            else:
+                rw,pw,cw,gw=0.55,0.20,0.15,0.10
             final={
-                r:(0.65*reference_prob[r])+
-                  (0.20*pair_pattern_prob[r])+
-                  (0.10*pair_prob[r])+
-                  (0.05*global_prob[r])
+                r:(rw*reference_prob[r])+
+                  (pw*pair_pattern_prob[r])+
+                  (cw*pair_prob[r])+
+                  (gw*global_prob[r])
                 for r in ('D','T')
             }
         elif pair_pattern_scores:
@@ -909,7 +931,7 @@ class App:
                 r:(0.45*pair_prob[r])+
                   (0.30*card_prob[r])+
                   (0.20*global_prob[r])+
-                  (0.05*(reference_prob[r] if reference_prob else 0.5))
+                  (0.05*0.5)
                 for r in ('D','T')
             }
         elif card_total:
@@ -933,7 +955,7 @@ class App:
             'prediction': '',
             'sequence': search_sequence[-30:]
         })
-        self.pair_history=self.pair_history[-100:]
+        self.pair_history=self.pair_history[-300:]
         self.render_pair_history()
         self.save_settings()
 
@@ -1227,17 +1249,17 @@ class App:
 
 
     def show_prediction_reference(self):
-        """Show a transparent audit of every reference used by the prediction."""
+        """Show the fixed 10-15 result reference and prediction formula audit."""
         win=tk.Toplevel(self.root)
         win.title('Prediction Reference')
-        win.geometry('1050x700')
+        win.geometry('1050x720')
         win.minsize(900,620)
         t=self._theme()
         win.configure(bg=t['root'])
 
-        tk.Label(win,text='PREDICTION REFERENCE / FORMULA AUDIT',
+        tk.Label(win,text='PREDICTION REFERENCE / 10-15 RESULT AUDIT',
                  bg=t['root'],fg=t['accent'],font=('Segoe UI',15,'bold')).pack(pady=(10,4))
-        tk.Label(win,text='LEFT = latest Pair Search RESULT | RIGHT = older RESULT | Import Data = S.NO. ascending',
+        tk.Label(win,text='VIDEO-STYLE REFERENCE = latest 10-15 actual D/T results matched against ALL imported history',
                  bg=t['root'],fg=t['text'],font=('Segoe UI',9,'bold')).pack(pady=(0,8))
 
         outer=tk.Frame(win,bg=t['root']); outer.pack(fill='both',expand=True,padx=12,pady=4)
@@ -1248,166 +1270,72 @@ class App:
         text_box.pack(side='left',fill='both',expand=True)
         scroll.pack(side='right',fill='y')
 
-        # Current search is the newest Pair Search entry and is excluded from references.
-        previous_history=self.pair_history[:-1] if self.pair_history else list(self.pair_history)
-        recent_items=previous_history[-5:]
-        latest_results=[]
-        for item in recent_items:
-            seq=[normalize_result(v) for v in item.get('sequence',[])
-                 if normalize_result(v) in ('D','T')]
-            if seq:
-                latest_results.append(seq[-1])
-
-        # Pair Search UI is newest on the LEFT, so reverse chronological values for display.
-        display_left=list(reversed(latest_results))
-        chronological=latest_results[:]
-        pattern= ''.join(chronological[-5:]) if len(chronological)>=5 else ''.join(chronological[-4:])
-        pattern_len=len(pattern)
-
-        # Exact pattern in imported data; only D/T rows can form the reference chain.
-        match_rows=[]
-        next_counts=Counter()
-        if pattern_len>=4:
-            seq=[normalize_result(r.get('result')) for r in self.data]
-            for i in range(len(seq)-pattern_len):
-                hist=seq[i:i+pattern_len]
-                if len(hist)!=pattern_len or any(x not in ('D','T') for x in hist):
-                    continue
-                if ''.join(hist)==pattern:
-                    nxt=seq[i+pattern_len]
-                    if nxt in ('D','T'):
-                        match_rows.append((i,i+pattern_len,nxt))
-                        next_counts[nxt]+=1
-
-        # Current searched pair's own NEXT RESULT signal.
         search_pair=str(self.pair.get() or '').strip().upper()
+        pair_rows=[r for r in self.data if clean_card(r.get('dragon',''))+clean_card(r.get('tiger',''))==search_pair]
+        ref=self.get_video_reference()
+        pred,pct=self.pattern_prediction(pair_rows)
+
+        text_box.insert('end','STATUS\n','heading')
+        text_box.insert('end',('WORKING — 10-15 result reference found\n' if ref else
+                               'WAITING — need at least 10 continuous actual D/T results with a historical match\n'))
+        text_box.insert('end',f'Current Pair: {search_pair or "-"}\n')
+        text_box.insert('end',f'Imported Data: {len(self.data)} rounds | S.NO. {self.data[0].get("sno","-") if self.data else "-"} → {self.data[-1].get("sno","-") if self.data else "-"}\n\n')
+
+        text_box.insert('end','1) FIXED VIDEO-STYLE CURRENT REFERENCE\n','heading')
+        if ref:
+            text_box.insert('end',f'Latest 15-chain (after last TIE): {ref.get("chain","-")}\n')
+            text_box.insert('end',f'Selected pattern: {ref["pattern"]}\n')
+            text_box.insert('end',f'Pattern length: {ref["length"]} rounds\n')
+            text_box.insert('end',f'Historical NEXT matches: {ref["matches"]}\n')
+            text_box.insert('end',f'NEXT D: {ref["D"]} | NEXT T: {ref["T"]}\n')
+            text_box.insert('end',f'Reference probability: D {ref["prob"]["D"]*100:.1f}% | T {ref["prob"]["T"]*100:.1f}%\n')
+            text_box.insert('end','Window tests 10-15:\n')
+            for w in ref.get('all_windows',[]):
+                text_box.insert('end',f'  {w["length"]}R {w["pattern"]} → matches {w["matches"]} | NEXT D {w["D"]} / T {w["T"]}\n')
+            if ref.get('rows'):
+                sample=', '.join(f'S.NO {i}→{nxt}' for i,nxt in ref['rows'][:15])
+                text_box.insert('end',f'Match sample: {sample}\n')
+        else:
+            text_box.insert('end','No exact 10-15 historical continuation found yet.\n')
+        text_box.insert('end','\n')
+
+        text_box.insert('end','2) CURRENT PAIR SECONDARY SIGNAL\n','heading')
         pair_next=Counter()
         pair_occurrences=0
         for i,r in enumerate(self.data[:-1]):
             cur=clean_card(r.get('dragon',''))+clean_card(r.get('tiger',''))
-            if cur!=search_pair:
-                continue
-            pair_occurrences+=1
-            nxt=normalize_result(self.data[i+1].get('result'))
-            if nxt in ('D','T'):
-                pair_next[nxt]+=1
-
-        # Reproduce the exact weighting used by pattern_prediction().
-        pair_rows=[r for r in self.data if clean_card(r.get('dragon',''))+clean_card(r.get('tiger',''))==search_pair]
-        pair_cnt=Counter(normalize_result(r.get('result')) for r in pair_rows if normalize_result(r.get('result')) in ('D','T'))
-        pair_total=sum(pair_cnt.values())
-        pair_prob={r:(pair_cnt[r]+1)/(pair_total+2) for r in ('D','T')}
-
-        ref_prob=None
-        if next_counts:
-            total=sum(next_counts.values())
-            ref_prob={r:next_counts[r]/total for r in ('D','T')}
-
-        # Pair-history transition signal.
-        pair_seq=[normalize_result(r.get('result')) for r in pair_rows if normalize_result(r.get('result')) in ('D','T')]
-        pair_pattern_scores=Counter()
-        for n in range(min(6,len(pair_seq)),1,-1):
-            pat=pair_seq[-n:]
-            for i in range(len(pair_seq)-n):
-                if pair_seq[i:i+n]==pat:
-                    nxt=pair_seq[i+n]
-                    if nxt in ('D','T'):
-                        pair_pattern_scores[nxt]+=n*n
-        if pair_pattern_scores:
-            total=sum(pair_pattern_scores.values())
-            pair_pattern_prob={r:pair_pattern_scores[r]/total for r in ('D','T')}
-        else:
-            pair_pattern_prob=pair_prob
-
-        # Card-level signal.
-        if search_pair.startswith('10') and len(search_pair)>=3:
-            sd='10'; st=search_pair[2:]
-        else:
-            sd=search_pair[:1]; st=search_pair[1:]
-        card_scores=Counter(); card_total=0
-        for row in self.data:
-            res=normalize_result(row.get('result'))
-            if res not in ('D','T'): continue
-            d=clean_card(row.get('dragon','')); tt=clean_card(row.get('tiger',''))
-            matched=False
-            if sd and d==sd:
-                card_scores[res]+=1; card_total+=1; matched=True
-            if st and tt==st and (not matched or st!=sd):
-                card_scores[res]+=1; card_total+=1
-        card_prob={r:(card_scores[r]+1)/(card_total+2) for r in ('D','T')}
-
-        # Global signal, same calculation as pattern_prediction().
-        seq=[normalize_result(r.get('result')) for r in self.data]
-        global_scores=Counter()
-        for n in range(min(6,len(seq)),1,-1):
-            pat=seq[-n:]
-            if len(pat)!=n or any(x not in ('D','T') for x in pat): continue
-            for i in range(len(seq)-n):
-                if seq[i:i+n]==pat:
-                    nxt=seq[i+n]
-                    if nxt in ('D','T'): global_scores[nxt]+=n*n
-        global_prob=card_prob if card_total else pair_prob
-        if global_scores:
-            total=sum(global_scores.values())
-            gp={r:global_scores[r]/total for r in ('D','T')}
-            global_prob={r:0.70*gp[r]+0.30*global_prob[r] for r in ('D','T')}
-
-        if ref_prob is not None:
-            final={r:0.65*ref_prob[r]+0.20*pair_pattern_prob[r]+0.10*pair_prob[r]+0.05*global_prob[r] for r in ('D','T')}
-            formula='65% REFERENCE + 20% PAIR PATTERN + 10% PAIR HISTORY + 5% GLOBAL'
-        elif pair_pattern_scores:
-            final={r:0.55*pair_pattern_prob[r]+0.25*pair_prob[r]+0.15*global_prob[r]+0.05*card_prob[r] for r in ('D','T')}
-            formula='55% PAIR PATTERN + 25% PAIR HISTORY + 15% GLOBAL + 5% CARD'
-        elif pair_total:
-            final={r:0.45*pair_prob[r]+0.30*card_prob[r]+0.20*global_prob[r]+0.05*0.5 for r in ('D','T')}
-            formula='45% PAIR HISTORY + 30% CARD + 20% GLOBAL + 5% NEUTRAL'
-        elif card_total:
-            final={r:0.75*card_prob[r]+0.25*global_prob[r] for r in ('D','T')}
-            formula='75% CARD + 25% GLOBAL'
-        else:
-            final=global_prob
-            formula='GLOBAL FALLBACK'
-        total=sum(final.values()) or 1.0
-        final={r:final[r]/total for r in ('D','T')}
-        pred=max(('D','T'),key=lambda r:final[r])
-
-        text_box.insert('end','STATUS\n','heading')
-        text_box.insert('end',('WORKING — exact reference found\n' if ref_prob else
-                               'WAITING — exact reference has no NEXT RESULT match\n'))
-        text_box.insert('end',f'Current Pair: {search_pair}\n')
-        text_box.insert('end',f'Imported Data: {len(self.data)} rounds | S.NO. {self.data[0].get("sno","-") if self.data else "-"} → {self.data[-1].get("sno","-") if self.data else "-"}\n\n')
-
-        text_box.insert('end','1) PAIR SEARCH HISTORY REFERENCE\n','heading')
-        text_box.insert('end',f'LEFT → RIGHT (latest → older): {"  →  ".join(display_left) if display_left else "-"}\n')
-        text_box.insert('end',f'CHRONOLOGICAL (older → latest): {"  →  ".join(chronological) if chronological else "-"}\n')
-        text_box.insert('end',f'EXACT REFERENCE PATTERN: {pattern or "-"}\n')
-        text_box.insert('end',f'References available: {len(chronological)} (need 4-5)\n\n')
-
-        text_box.insert('end','2) IMPORT DATA EXACT PATTERN TEST\n','heading')
-        text_box.insert('end',f'Pattern matches with valid NEXT RESULT: {len(match_rows)}\n')
-        text_box.insert('end',f'NEXT D: {next_counts["D"]} | NEXT T: {next_counts["T"]}\n')
-        if ref_prob:
-            text_box.insert('end',f'Reference probability: D {ref_prob["D"]*100:.1f}% | T {ref_prob["T"]*100:.1f}%\n')
-        else:
-            text_box.insert('end','Reference probability: NOT AVAILABLE\n')
-        text_box.insert('end','\n')
-
-        text_box.insert('end','3) CURRENT PAIR NEXT-RESULT TEST\n','heading')
-        text_box.insert('end',f'Pair occurrences with a following round: {pair_occurrences}\n')
+            if cur==search_pair:
+                pair_occurrences+=1
+                nxt=normalize_result(self.data[i+1].get('result'))
+                if nxt in ('D','T'): pair_next[nxt]+=1
+        pair_cnt=Counter(normalize_result(r.get('result')) for r in pair_rows
+                         if normalize_result(r.get('result')) in ('D','T'))
+        text_box.insert('end',f'Pair occurrences with following round: {pair_occurrences}\n')
         text_box.insert('end',f'NEXT D: {pair_next["D"]} | NEXT T: {pair_next["T"]}\n')
         text_box.insert('end',f'Pair historical result: D {pair_cnt["D"]} | T {pair_cnt["T"]}\n\n')
 
-        text_box.insert('end','4) FINAL FORMULA USED BY APP\n','heading')
+        text_box.insert('end','3) FINAL FORMULA\n','heading')
+        if ref:
+            if ref['matches']>=5:
+                formula='75% VIDEO 10-15 REFERENCE + 10% PAIR PATTERN + 10% PAIR HISTORY + 5% GLOBAL'
+            elif ref['matches']>=2:
+                formula='70% VIDEO 10-15 REFERENCE + 15% PAIR PATTERN + 10% PAIR HISTORY + 5% GLOBAL'
+            else:
+                formula='55% VIDEO 10-15 REFERENCE + 20% PAIR PATTERN + 15% PAIR HISTORY + 10% GLOBAL'
+        else:
+            formula='FALLBACK: existing Pair Pattern / Pair History / Global signals'
         text_box.insert('end',f'{formula}\n')
-        text_box.insert('end',f'Final D: {final["D"]*100:.1f}% | Final T: {final["T"]*100:.1f}%\n')
+        text_box.insert('end',f'Final D: {100-pct:.1f}% | Final T: {pct:.1f}%\n' if pred=='T'
+                         else f'Final D: {pct:.1f}% | Final T: {100-pct:.1f}%\n')
         text_box.insert('end',f'FINAL PREDICTION: {pred}\n\n')
 
-        text_box.insert('end','5) IMPORTANT CHECKS\n','heading')
-        text_box.insert('end','• Current/new Pair Search is excluded from the 4-5 reference.\n')
-        text_box.insert('end','• Reference uses actual Pair Search RESULT, not PREDICTION.\n')
-        text_box.insert('end','• LEFT side is treated as latest; chronological pattern is reversed before Import Data search.\n')
-        text_box.insert('end','• TIE is excluded from D/T reference pattern.\n')
-        text_box.insert('end','• Import Data is searched in stored S.NO. order.\n')
+        text_box.insert('end','4) IMPORTANT CHECKS\n','heading')
+        text_box.insert('end','• Reference uses actual imported RESULT only; prediction history is not used as the reference.\n')
+        text_box.insert('end','• TIE breaks the continuous pattern chain.\n')
+        text_box.insert('end','• The latest 10-15 actual rounds are re-matched against the complete stored history every time ANALYZE runs.\n')
+        text_box.insert('end','• The current/latest occurrence is not counted as a NEXT-result match because it has no following round.\n')
+        text_box.insert('end','• Longer 15→10 patterns are preferred; at least 2 historical matches are preferred when available.\n')
+        text_box.insert('end','• This is a historical statistical reference, not a guaranteed future result.\n')
 
         text_box.tag_configure('heading',foreground='#34d399',font=('Consolas',11,'bold'))
         text_box.configure(state='disabled')
@@ -1567,21 +1495,16 @@ class App:
         if hasattr(self,'top_next_label'):
             self.top_next_label.configure(text=next_text)
 
-        # SHOW THE REFERENCE PATTERN SEPARATELY.
-        # Use only previous Pair Search History entries; exclude current search.
-        ref_values=[]
-        old_history=self.pair_history[:-1] if self.pair_history else []
-        for item in old_history[-5:]:
-            seq_ref=[normalize_result(v) for v in item.get('sequence',[])
-                     if normalize_result(v) in ('D','T')]
-            if seq_ref:
-                ref_values.append(seq_ref[-1])
+        # FIXED VIDEO-STYLE REFERENCE: current 10-15 actual results
+        # matched against the COMPLETE imported history.
+        ref_info=self.get_video_reference()
         if hasattr(self,'reference_pattern_label'):
-            if len(ref_values)>=4:
-                ref_text='  →  '.join(ref_values[-5:])
+            if ref_info and ref_info.get('pattern'):
+                self.reference_pattern_label.configure(
+                    text=f"{ref_info['pattern']}  |  {ref_info['length']}R / {ref_info['matches']}M"
+                )
             else:
-                ref_text='Need 4-5 references'
-            self.reference_pattern_label.configure(text=ref_text)
+                self.reference_pattern_label.configure(text='Need 10-15 actual results')
 
         for (num,side),v in top:
             row=tk.Frame(self.chart_frame,bg='#111827'); row.pack(fill='x',pady=2)
