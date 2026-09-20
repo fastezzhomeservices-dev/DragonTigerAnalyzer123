@@ -896,7 +896,8 @@ class App:
             if res in ('D','T'):
                 chain_rows.append((idx,row,res))
         n=int(video_ref.get('length',0) or 0)
-        pattern=str(video_ref.get('pattern','') or '')        if n < 4 or len(chain_rows) <= n or not pattern:
+        pattern=str(video_ref.get('pattern','') or '')
+        if n < 4 or len(chain_rows) <= n or not pattern:
             return []
 
         counts=Counter()
