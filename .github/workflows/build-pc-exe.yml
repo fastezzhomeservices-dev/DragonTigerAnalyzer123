@@ -52,3 +52,5 @@ jobs:
           name: DragonTigerAnalyzer-PC-EXE-FINAL
           path: dist/DragonTigerAnalyzerPC
           if-no-files-found: error
+
+# Trigger PC build for actual pair-result history fix.
