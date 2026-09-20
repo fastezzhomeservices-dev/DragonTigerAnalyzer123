@@ -98,7 +98,7 @@ class App:
             self.background_path = s.get('background', '')
             self.pair_history = s.get('pair_history', []) if isinstance(s.get('pair_history', []), list) else []
             self.result_history = s.get('result_history', []) if isinstance(s.get('result_history', []), list) else []
-            self.pair_history = self.pair_history[-100:]
+            self.pair_history = self.pair_history[-300:]
             self.result_history = self.result_history[-200:]
         except Exception:
             pass
@@ -108,7 +108,7 @@ class App:
             os.makedirs(self.settings_dir, exist_ok=True)
             with open(self.settings_file, 'w', encoding='utf-8') as f:
                 json.dump({'theme': self.theme_name, 'background': self.background_path,
-                       'pair_history': self.pair_history[-100:],
+                       'pair_history': self.pair_history[-300:],
                        'result_history': self.result_history[-200:]}, f, indent=2)
         except Exception:
             pass
@@ -1443,8 +1443,25 @@ class App:
                     normalized_seq=[normalize_result(v) for v in item.get('sequence',[]) if normalize_result(v) in ('D','T','TIE')]
                     actual_result=normalized_seq[-1] if normalized_seq else ''
                     tree.insert('', 'end',iid=str(i-1),values=(i,item.get('time',''),item.get('pair',''),item.get('prediction',''),actual_result,seq,'DELETE'))
-        tk.Button(win,text='DELETE SELECTED',command=delete_selected,bg='#b91c1c',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='left',padx=12,pady=8)
-        tk.Button(win,text='DOWNLOAD HISTORY',command=self.download_history,bg='#374151',fg='white',font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='right',padx=12,pady=8)
+        def delete_all_history():
+            if not self.pair_history:
+                return
+            if not messagebox.askyesno('DELETE ALL PAIR HISTORY',
+                                       'Delete all Pair Search History (up to 300 records)?'):
+                return
+            self.pair_history=[]
+            self.save_settings()
+            self.render_pair_history()
+            for x in tree.get_children():
+                tree.delete(x)
+            self.status.set('ALL PAIR SEARCH HISTORY DELETED')
+
+        tk.Button(win,text='DELETE SELECTED',command=delete_selected,bg='#b91c1c',fg='white',
+                  font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='left',padx=12,pady=8)
+        tk.Button(win,text='DELETE ALL',command=delete_all_history,bg='#7f1d1d',fg='white',
+                  font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='left',padx=5,pady=8)
+        tk.Button(win,text='DOWNLOAD HISTORY',command=self.download_history,bg='#374151',fg='white',
+                  font=('Segoe UI',9,'bold'),relief='flat',padx=12,pady=6).pack(side='right',padx=12,pady=8)
 
     def show_result_history(self):
         win=tk.Toplevel(self.root); win.title('Production Result History'); win.geometry('1050x520'); win.configure(bg=self._theme()['root'])
