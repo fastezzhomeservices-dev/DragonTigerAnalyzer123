@@ -442,7 +442,7 @@ class App:
         report=tk.LabelFrame(content,text='  OCCURRENCE + PREVIOUS/NEXT 3-ROUND REPORT  ',bg=PANEL,fg=YELLOW,
                              font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         report.pack(fill='x',padx=12,pady=2)
-        report_table=tk.Frame(report,bg=PANEL,height=132)
+        report_table=tk.Frame(report,bg=PANEL,height=250)
         report_table.pack(fill='x',padx=8,pady=3)
         report_table.pack_propagate(False)
 
@@ -468,32 +468,7 @@ class App:
         self.report_canvas.bind('<Configure>',lambda e:self.render_report_rows())
         self.render_report_rows()
 
-        # Production result entry table
-        prod=tk.LabelFrame(content,text='  PRODUCTION RESULT ENTRY  ',bg=PANEL,fg=YELLOW,
-                           font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        prod.pack(fill='x',padx=12,pady=2)
-        prod_table=tk.Frame(prod,bg=PANEL,height=68)
-        prod_table.pack(fill='x',padx=8,pady=3)
-        prod_table.pack_propagate(False)
-        pcols=('S NO','ROUND ID','TIME','DRAGON','TIGER','TIE','PREDICTION','RESULT','PAIR','D Q/E','T Q/E','PREV RESULT')
-        self.production_tree=ttk.Treeview(prod_table,columns=pcols,show='headings',height=2)
-        pwidths={'S NO':60,'ROUND ID':145,'TIME':120,'DRAGON':75,'TIGER':75,'TIE':60,'PREDICTION':105,
-                 'RESULT':90,'PAIR':80,'D Q/E':90,'T Q/E':90,'PREV RESULT':110}
-        for c in pcols:
-            self.production_tree.heading(c,text=c)
-            self.production_tree.column(c,width=pwidths[c],anchor='center',stretch=True)
-        self.production_tree.pack(fill='both',expand=True)
-        self.production_tree.tag_configure('match',background='#078b3d',foreground='white')
-        self.production_tree.tag_configure('nomatch',background='#e00012',foreground='white')
-
-        # Bottom prediction history summary
-        dash=tk.LabelFrame(content,text='  PREDICTION HISTORY  ',bg=PANEL,fg=YELLOW,
-                           font=('Segoe UI',12,'bold'),bd=1,relief='groove')
-        dash.pack(fill='x',padx=12,pady=(2,4),ipady=1)
-        self.prediction_dashboard=tk.Frame(dash,bg=PANEL)
-        self.prediction_dashboard.pack(fill='x',padx=8,pady=2)
-
-        # Hidden compatibility widgets used by existing analysis/export methods.
+        # Production Result Entry and visible Prediction History are intentionally removed from the main dashboard.\n        # Their compatibility data/widgets remain hidden for existing save/export methods.\n\n        # Hidden compatibility widgets used by existing analysis/export methods.
         # IMPORTANT: keep the single Pair/Summary StringVars created in __init__
         # so the visible Pair Summary and reference selector stay synchronized.
         hidden=tk.Frame(self.root,bg=BG)
