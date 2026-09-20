@@ -816,10 +816,10 @@ class App:
         if not windows:
             return None
 
-        # Prefer the longest 10-15 round reference with >=2 historical continuations.
-        # If no 10-15 match exists, use the longest shorter suffix inside the same
-        # latest-15 report so the reference does not go blank on a new sequence.
-        primary_band=[w for w in windows if w['length']>=10 and w['matches']>=2]
+        # Prefer the longest available 10-15 round reference. If none of the
+        # 10-15 windows has a match, use the longest shorter suffix inside the
+        # same latest-15 report so the reference does not go blank.
+        primary_band=[w for w in windows if w['length']>=10]
         strong=[w for w in windows if w['matches']>=2]
         primary=(primary_band[0] if primary_band else (strong[0] if strong else windows[0]))
         total=primary['D']+primary['T']
@@ -1336,7 +1336,7 @@ class App:
         text_box.insert('end','• TIE is excluded from the D/T reference stream; it is never counted as D or T.\n')
         text_box.insert('end','• The latest 10-15 actual rounds are re-matched against the complete stored history every time ANALYZE runs.\n')
         text_box.insert('end','• The current/latest occurrence is not counted as a NEXT-result match because it has no following round.\n')
-        text_box.insert('end','• 10-15 round patterns are preferred; if unavailable, the longest shorter suffix inside the same latest-15 report is used.\n')
+        text_box.insert('end','• The longest available 10-15 round pattern is preferred; if none matches, the longest shorter suffix inside the same latest-15 report is used.\n')
         text_box.insert('end','• This is a historical statistical reference, not a guaranteed future result.\n')
 
         text_box.tag_configure('heading',foreground='#34d399',font=('Consolas',11,'bold'))
