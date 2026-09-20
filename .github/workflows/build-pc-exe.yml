@@ -26,13 +26,19 @@ jobs:
         run: pip install pyinstaller openpyxl pillow pywebview
 
       - name: Build PC EXE
-        run: pyinstaller --onefile --windowed --name DragonTigerAnalyzerPC pc_analyzer.py
+        run: pyinstaller --onedir --windowed --name DragonTigerAnalyzerPC pc_analyzer.py
 
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
 
       - name: Build Windows Installer
         run: iscc installer.iss
+
+      - name: Verify packaged files
+        shell: pwsh
+        run: |
+          if (!(Test-Path "dist\DragonTigerAnalyzerPC\DragonTigerAnalyzerPC.exe")) { throw "PC EXE missing" }
+          if (!(Test-Path "installer\DragonTigerAnalyzerPC-v2.0-FINAL-Setup.exe")) { throw "Installer missing" }
 
       - uses: actions/upload-artifact@v4
         with:
@@ -43,5 +49,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: DragonTigerAnalyzer-PC-EXE-FINAL
-          path: dist/DragonTigerAnalyzerPC.exe
+          path: dist/DragonTigerAnalyzerPC
           if-no-files-found: error
