@@ -1302,8 +1302,15 @@ class App:
             slot=tk.Frame(strip,bg='#111827',width=52,height=50,cursor='hand2')
             slot.pack(side='left',fill='y',padx=0)
             slot.pack_propagate(False)
-            pred=normalize_result(item.get('prediction','')) or 'TIE'
-            cv=self._circle(slot,pred,40)
+            # History circle shows ACTUAL card result, not statistical prediction.
+            # Example: 5Q => Dragon 5 < Tiger Q => T.
+            pair=str(item.get('pair','')).strip().upper().replace(' ','')
+            if pair.startswith('10') and len(pair) >= 3:
+                hist_d='10'; hist_t=pair[2:]
+            else:
+                hist_d=pair[:1]; hist_t=pair[1:]
+            actual_hist_result=result_from_cards(hist_d,hist_t) or 'TIE'
+            cv=self._circle(slot,actual_hist_result,40)
             cv.pack(anchor='center',pady=2)
             cv.bind('<Button-1>',lambda e,it=item:self._show_pair_result_popup(it))
             slot.bind('<Button-1>',lambda e,it=item:self._show_pair_result_popup(it))
