@@ -406,7 +406,7 @@ class App:
         # Pair search history + TOP 4 NEXT PATTI from imported Excel/CSV data.
         # The TOP 4 column shows the most frequent cards in the round immediately
         # after every historical occurrence of the searched Pair Patti.
-        ph=tk.LabelFrame(content,text='  PAIR SEARCH HISTORY (LATEST 15)  ',bg=PANEL,fg=YELLOW,
+        ph=tk.LabelFrame(content,text='  PAIR SEARCH HISTORY (LATEST 20)  ',bg=PANEL,fg=YELLOW,
                          font=('Segoe UI',12,'bold'),bd=1,relief='groove')
         ph.pack(fill='x',padx=12,pady=2)
 
@@ -425,7 +425,7 @@ class App:
                                      font=('Segoe UI',10,'bold'),anchor='w',justify='left')
         self.top_next_label.pack(fill='x',padx=8,pady=(1,0))
 
-        self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=54,width=760)
+        self.pair_history_frame=tk.Frame(search_row,bg=PANEL,height=54,width=900)
         self.pair_history_frame.pack(side='left',fill='y',expand=False)
         self.pair_history_frame.pack_propagate(False)
         self.render_pair_history()
@@ -1008,7 +1008,7 @@ class App:
     def render_pair_history(self):
         if not hasattr(self,'pair_history_frame'): return
         for w in self.pair_history_frame.winfo_children(): w.destroy()
-        items=list(reversed(self.pair_history[-15:]))
+        items=list(reversed(self.pair_history[-20:]))
         if not items:
             tk.Label(self.pair_history_frame,text='PAIR SEARCH HISTORY WILL APPEAR HERE',bg='#111827',fg='#9ca3af',font=('Segoe UI',9,'bold')).pack(pady=25)
             return
@@ -1212,7 +1212,7 @@ class App:
     def show_result_history(self):
         win=tk.Toplevel(self.root); win.title('Production Result History'); win.geometry('1050x520'); win.configure(bg=self._theme()['root'])
         t=self._theme()
-        tk.Label(win,text='PRODUCTION RESULT HISTORY — LATEST 15+',bg=t['root'],fg=t['accent'],font=('Segoe UI',14,'bold')).pack(pady=10)
+        tk.Label(win,text='PRODUCTION RESULT HISTORY — LATEST 20+',bg=t['root'],fg=t['accent'],font=('Segoe UI',14,'bold')).pack(pady=10)
         frame=tk.Frame(win,bg=t['root']); frame.pack(fill='both',expand=True,padx=12,pady=5)
         cols=('NO','TIME','PAIR','PREDICTION','CAME?','D','T','FINAL','DELETE')
         tree=ttk.Treeview(frame,columns=cols,show='headings',height=15)
