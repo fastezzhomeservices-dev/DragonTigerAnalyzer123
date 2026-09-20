@@ -325,6 +325,7 @@ class App:
             ('Import Excel/CSV',self.import_data),('Export Excel/CSV',self.export_data),
             ('LIVE DRAGON TIGER',self.open_live_browser),('THEME / BACKGROUND',self.open_theme_settings),
             ('PAIR SEARCH',self.open_pair_search),
+            ('PREDICTION REFERENCE',self.show_prediction_reference),
             ('PAIR HISTORY',self.show_pair_history),
             ('RESULT HISTORY',self.show_result_history),
             ('PRODUCTION RESULT ENTRY',self.open_production_entry),
@@ -1224,6 +1225,194 @@ class App:
         messagebox.showinfo('Saved','Production result saved successfully.')
         self.show_result_history()
 
+
+    def show_prediction_reference(self):
+        """Show a transparent audit of every reference used by the prediction."""
+        win=tk.Toplevel(self.root)
+        win.title('Prediction Reference')
+        win.geometry('1050x700')
+        win.minsize(900,620)
+        t=self._theme()
+        win.configure(bg=t['root'])
+
+        tk.Label(win,text='PREDICTION REFERENCE / FORMULA AUDIT',
+                 bg=t['root'],fg=t['accent'],font=('Segoe UI',15,'bold')).pack(pady=(10,4))
+        tk.Label(win,text='LEFT = latest Pair Search RESULT | RIGHT = older RESULT | Import Data = S.NO. ascending',
+                 bg=t['root'],fg=t['text'],font=('Segoe UI',9,'bold')).pack(pady=(0,8))
+
+        outer=tk.Frame(win,bg=t['root']); outer.pack(fill='both',expand=True,padx=12,pady=4)
+        text_box=tk.Text(outer,bg='#111827',fg='#f8fafc',insertbackground='white',
+                         font=('Consolas',10),wrap='word',relief='groove',bd=1)
+        scroll=ttk.Scrollbar(outer,orient='vertical',command=text_box.yview)
+        text_box.configure(yscrollcommand=scroll.set)
+        text_box.pack(side='left',fill='both',expand=True)
+        scroll.pack(side='right',fill='y')
+
+        # Current search is the newest Pair Search entry and is excluded from references.
+        previous_history=self.pair_history[:-1] if self.pair_history else list(self.pair_history)
+        recent_items=previous_history[-5:]
+        latest_results=[]
+        for item in recent_items:
+            seq=[normalize_result(v) for v in item.get('sequence',[])
+                 if normalize_result(v) in ('D','T')]
+            if seq:
+                latest_results.append(seq[-1])
+
+        # Pair Search UI is newest on the LEFT, so reverse chronological values for display.
+        display_left=list(reversed(latest_results))
+        chronological=latest_results[:]
+        pattern= ''.join(chronological[-5:]) if len(chronological)>=5 else ''.join(chronological[-4:])
+        pattern_len=len(pattern)
+
+        # Exact pattern in imported data; only D/T rows can form the reference chain.
+        match_rows=[]
+        next_counts=Counter()
+        if pattern_len>=4:
+            seq=[normalize_result(r.get('result')) for r in self.data]
+            for i in range(len(seq)-pattern_len):
+                hist=seq[i:i+pattern_len]
+                if len(hist)!=pattern_len or any(x not in ('D','T') for x in hist):
+                    continue
+                if ''.join(hist)==pattern:
+                    nxt=seq[i+pattern_len]
+                    if nxt in ('D','T'):
+                        match_rows.append((i,i+pattern_len,nxt))
+                        next_counts[nxt]+=1
+
+        # Current searched pair's own NEXT RESULT signal.
+        search_pair=str(self.pair.get() or '').strip().upper()
+        pair_next=Counter()
+        pair_occurrences=0
+        for i,r in enumerate(self.data[:-1]):
+            cur=clean_card(r.get('dragon',''))+clean_card(r.get('tiger',''))
+            if cur!=search_pair:
+                continue
+            pair_occurrences+=1
+            nxt=normalize_result(self.data[i+1].get('result'))
+            if nxt in ('D','T'):
+                pair_next[nxt]+=1
+
+        # Reproduce the exact weighting used by pattern_prediction().
+        pair_rows=[r for r in self.data if clean_card(r.get('dragon',''))+clean_card(r.get('tiger',''))==search_pair]
+        pair_cnt=Counter(normalize_result(r.get('result')) for r in pair_rows if normalize_result(r.get('result')) in ('D','T'))
+        pair_total=sum(pair_cnt.values())
+        pair_prob={r:(pair_cnt[r]+1)/(pair_total+2) for r in ('D','T')}
+
+        ref_prob=None
+        if next_counts:
+            total=sum(next_counts.values())
+            ref_prob={r:next_counts[r]/total for r in ('D','T')}
+
+        # Pair-history transition signal.
+        pair_seq=[normalize_result(r.get('result')) for r in pair_rows if normalize_result(r.get('result')) in ('D','T')]
+        pair_pattern_scores=Counter()
+        for n in range(min(6,len(pair_seq)),1,-1):
+            pat=pair_seq[-n:]
+            for i in range(len(pair_seq)-n):
+                if pair_seq[i:i+n]==pat:
+                    nxt=pair_seq[i+n]
+                    if nxt in ('D','T'):
+                        pair_pattern_scores[nxt]+=n*n
+        if pair_pattern_scores:
+            total=sum(pair_pattern_scores.values())
+            pair_pattern_prob={r:pair_pattern_scores[r]/total for r in ('D','T')}
+        else:
+            pair_pattern_prob=pair_prob
+
+        # Card-level signal.
+        if search_pair.startswith('10') and len(search_pair)>=3:
+            sd='10'; st=search_pair[2:]
+        else:
+            sd=search_pair[:1]; st=search_pair[1:]
+        card_scores=Counter(); card_total=0
+        for row in self.data:
+            res=normalize_result(row.get('result'))
+            if res not in ('D','T'): continue
+            d=clean_card(row.get('dragon','')); tt=clean_card(row.get('tiger',''))
+            matched=False
+            if sd and d==sd:
+                card_scores[res]+=1; card_total+=1; matched=True
+            if st and tt==st and (not matched or st!=sd):
+                card_scores[res]+=1; card_total+=1
+        card_prob={r:(card_scores[r]+1)/(card_total+2) for r in ('D','T')}
+
+        # Global signal, same calculation as pattern_prediction().
+        seq=[normalize_result(r.get('result')) for r in self.data]
+        global_scores=Counter()
+        for n in range(min(6,len(seq)),1,-1):
+            pat=seq[-n:]
+            if len(pat)!=n or any(x not in ('D','T') for x in pat): continue
+            for i in range(len(seq)-n):
+                if seq[i:i+n]==pat:
+                    nxt=seq[i+n]
+                    if nxt in ('D','T'): global_scores[nxt]+=n*n
+        global_prob=card_prob if card_total else pair_prob
+        if global_scores:
+            total=sum(global_scores.values())
+            gp={r:global_scores[r]/total for r in ('D','T')}
+            global_prob={r:0.70*gp[r]+0.30*global_prob[r] for r in ('D','T')}
+
+        if ref_prob is not None:
+            final={r:0.65*ref_prob[r]+0.20*pair_pattern_prob[r]+0.10*pair_prob[r]+0.05*global_prob[r] for r in ('D','T')}
+            formula='65% REFERENCE + 20% PAIR PATTERN + 10% PAIR HISTORY + 5% GLOBAL'
+        elif pair_pattern_scores:
+            final={r:0.55*pair_pattern_prob[r]+0.25*pair_prob[r]+0.15*global_prob[r]+0.05*card_prob[r] for r in ('D','T')}
+            formula='55% PAIR PATTERN + 25% PAIR HISTORY + 15% GLOBAL + 5% CARD'
+        elif pair_total:
+            final={r:0.45*pair_prob[r]+0.30*card_prob[r]+0.20*global_prob[r]+0.05*0.5 for r in ('D','T')}
+            formula='45% PAIR HISTORY + 30% CARD + 20% GLOBAL + 5% NEUTRAL'
+        elif card_total:
+            final={r:0.75*card_prob[r]+0.25*global_prob[r] for r in ('D','T')}
+            formula='75% CARD + 25% GLOBAL'
+        else:
+            final=global_prob
+            formula='GLOBAL FALLBACK'
+        total=sum(final.values()) or 1.0
+        final={r:final[r]/total for r in ('D','T')}
+        pred=max(('D','T'),key=lambda r:final[r])
+
+        text_box.insert('end','STATUS\n','heading')
+        text_box.insert('end',('WORKING — exact reference found\n' if ref_prob else
+                               'WAITING — exact reference has no NEXT RESULT match\n'))
+        text_box.insert('end',f'Current Pair: {search_pair}\n')
+        text_box.insert('end',f'Imported Data: {len(self.data)} rounds | S.NO. {self.data[0].get("sno","-") if self.data else "-"} → {self.data[-1].get("sno","-") if self.data else "-"}\n\n')
+
+        text_box.insert('end','1) PAIR SEARCH HISTORY REFERENCE\n','heading')
+        text_box.insert('end',f'LEFT → RIGHT (latest → older): {"  →  ".join(display_left) if display_left else "-"}\n')
+        text_box.insert('end',f'CHRONOLOGICAL (older → latest): {"  →  ".join(chronological) if chronological else "-"}\n')
+        text_box.insert('end',f'EXACT REFERENCE PATTERN: {pattern or "-"}\n')
+        text_box.insert('end',f'References available: {len(chronological)} (need 4-5)\n\n')
+
+        text_box.insert('end','2) IMPORT DATA EXACT PATTERN TEST\n','heading')
+        text_box.insert('end',f'Pattern matches with valid NEXT RESULT: {len(match_rows)}\n')
+        text_box.insert('end',f'NEXT D: {next_counts["D"]} | NEXT T: {next_counts["T"]}\n')
+        if ref_prob:
+            text_box.insert('end',f'Reference probability: D {ref_prob["D"]*100:.1f}% | T {ref_prob["T"]*100:.1f}%\n')
+        else:
+            text_box.insert('end','Reference probability: NOT AVAILABLE\n')
+        text_box.insert('end','\n')
+
+        text_box.insert('end','3) CURRENT PAIR NEXT-RESULT TEST\n','heading')
+        text_box.insert('end',f'Pair occurrences with a following round: {pair_occurrences}\n')
+        text_box.insert('end',f'NEXT D: {pair_next["D"]} | NEXT T: {pair_next["T"]}\n')
+        text_box.insert('end',f'Pair historical result: D {pair_cnt["D"]} | T {pair_cnt["T"]}\n\n')
+
+        text_box.insert('end','4) FINAL FORMULA USED BY APP\n','heading')
+        text_box.insert('end',f'{formula}\n')
+        text_box.insert('end',f'Final D: {final["D"]*100:.1f}% | Final T: {final["T"]*100:.1f}%\n')
+        text_box.insert('end',f'FINAL PREDICTION: {pred}\n\n')
+
+        text_box.insert('end','5) IMPORTANT CHECKS\n','heading')
+        text_box.insert('end','• Current/new Pair Search is excluded from the 4-5 reference.\n')
+        text_box.insert('end','• Reference uses actual Pair Search RESULT, not PREDICTION.\n')
+        text_box.insert('end','• LEFT side is treated as latest; chronological pattern is reversed before Import Data search.\n')
+        text_box.insert('end','• TIE is excluded from D/T reference pattern.\n')
+        text_box.insert('end','• Import Data is searched in stored S.NO. order.\n')
+
+        text_box.tag_configure('heading',foreground='#34d399',font=('Consolas',11,'bold'))
+        text_box.configure(state='disabled')
+        tk.Button(win,text='CLOSE',command=win.destroy,bg='#0758d9',fg='white',
+                  font=('Segoe UI',10,'bold'),padx=20,pady=6).pack(pady=8)
 
     def show_pair_history(self):
         win=tk.Toplevel(self.root); win.title('Pair Search History'); win.geometry('900x500'); win.configure(bg=self._theme()['root'])
