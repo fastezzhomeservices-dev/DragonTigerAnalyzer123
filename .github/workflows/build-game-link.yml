@@ -1,0 +1,46 @@
+name: Build Separate Game Link App
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - game_link_app.py
+      - installer-game.iss
+      - .github/workflows/build-game-link.yml
+
+concurrency:
+  group: game-link-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify source syntax
+        run: python -m py_compile game_link_app.py
+      - name: Install build dependencies
+        run: pip install pyinstaller pywebview
+      - name: Build Game Link EXE
+        run: pyinstaller --onedir --windowed --name DragonTigerGameLink game_link_app.py
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+      - name: Build Windows Installer
+        run: iscc installer-game.iss
+      - name: Verify installer
+        shell: pwsh
+        run: |
+          if (!(Test-Path "dist\DragonTigerGameLink\DragonTigerGameLink.exe")) { throw "Game Link EXE missing" }
+          if (!(Test-Path "installer\DragonTigerGameLink-v1.0-Setup.exe")) { throw "Game Link installer missing" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DragonTigerGameLink-PC-Installer
+          path: installer/DragonTigerGameLink-v1.0-Setup.exe
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DragonTigerGameLink-PC-EXE
+          path: dist/DragonTigerGameLink
+          if-no-files-found: error
