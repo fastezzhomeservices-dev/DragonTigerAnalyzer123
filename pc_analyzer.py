@@ -621,6 +621,12 @@ class App:
         tk.Label(legend,text=f'●  Match ({matches})     {mp:.0f}%',bg=bg,fg=green,font=('Segoe UI',10,'bold')).pack(anchor='w',pady=5)
         tk.Label(legend,text=f'●  No Match ({nomatch})     {np:.0f}%',bg=bg,fg=red,font=('Segoe UI',10,'bold')).pack(anchor='w',pady=5)
 
+        reset_btn=tk.Button(self.prediction_dashboard,text='RESET PREDICTION REPORT',
+                                  command=self.reset_prediction_report,bg='#b91c1c',fg='white',
+                                  activebackground='#dc2626',activeforeground='white',
+                                  font=('Segoe UI',8,'bold'),relief='groove',bd=1,padx=9,pady=5)
+        reset_btn.pack(side='right',padx=(4,8),pady=8)
+
         recent=tk.Frame(self.prediction_dashboard,bg=bg,highlightthickness=1,highlightbackground='#0b72ff')
         recent.pack(side='right',fill='both',expand=True,padx=(18,8))
         tk.Label(recent,text='RECENT PREDICTION HISTORY (LATEST 10)',bg=bg,fg=white,font=('Segoe UI',10,'bold')).pack(anchor='w',padx=12,pady=(7,2))
@@ -923,120 +929,30 @@ class App:
         return top
 
     def pattern_prediction(self, pair_rows):
-        # PRIMARY FORMULA: FIXED VIDEO-REPORT STYLE 10-15 RESULT REFERENCE.
-        # The latest 10-15 actual D/T results are matched against the COMPLETE
-        # imported history. Longest exact match is preferred; TIE breaks chain.
-        pair_cnt=Counter(
-            normalize_result(r.get('result'))
-            for r in pair_rows
-            if normalize_result(r.get('result')) in ('D','T')
-        )
-        pair_total=sum(pair_cnt.values())
-        pair_prob={r:(pair_cnt[r]+1)/(pair_total+2) for r in ('D','T')}
-
-        video_ref=self.get_video_reference()
-        reference_prob=video_ref['prob'] if video_ref else None
-
-        # Same-pair transition pattern is a secondary signal only.
-        pair_seq=[
-            normalize_result(r.get('result'))
-            for r in pair_rows
-            if normalize_result(r.get('result')) in ('D','T')
-        ]
-        pair_pattern_scores=Counter()
-        for n in range(min(6,len(pair_seq)),1,-1):
-            pat=pair_seq[-n:]
-            for i in range(len(pair_seq)-n):
-                if pair_seq[i:i+n]==pat:
-                    nxt=pair_seq[i+n]
-                    if nxt in ('D','T'):
-                        pair_pattern_scores[nxt]+=n*n
-        if pair_pattern_scores:
-            total=sum(pair_pattern_scores.values())
-            pair_pattern_prob={r:pair_pattern_scores[r]/total for r in ('D','T')}
-        else:
-            pair_pattern_prob=pair_prob
-
-        # Card-level secondary signal.
-        search_pair=str(self.pair.get() or '').strip().upper()
-        if search_pair.startswith('10') and len(search_pair)>=3:
-            search_d='10'; search_t=search_pair[2:]
-        else:
-            search_d=search_pair[:1]; search_t=search_pair[1:]
-
-        card_scores=Counter(); card_total=0
-        for row in self.data:
-            res=normalize_result(row.get('result'))
-            if res not in ('D','T'):
+        """Excel-only reference: imported data is the only source."""
+        search_pair=str(self.pair.get() or '').strip().upper().replace(' ','')
+        next_results=Counter()
+        next_numbers=Counter()
+        for i,row in enumerate(self.data[:-1]):
+            cur=clean_card(row.get('dragon','')) + clean_card(row.get('tiger',''))
+            if cur != search_pair:
                 continue
-            d=clean_card(row.get('dragon','')); t=clean_card(row.get('tiger',''))
-            matched=False
-            if search_d and d==search_d:
-                card_scores[res]+=1; card_total+=1; matched=True
-            if search_t and t==search_t and (not matched or t!=search_d):
-                card_scores[res]+=1; card_total+=1
-        card_prob={r:(card_scores[r]+1)/(card_total+2) for r in ('D','T')}
-
-        # Global recent-pattern backup.
-        seq=[normalize_result(r.get('result')) for r in self.data]
-        global_scores=Counter()
-        for n in range(min(8,len(seq)),1,-1):
-            pat=seq[-n:]
-            if any(x not in ('D','T') for x in pat):
-                continue
-            for i in range(len(seq)-n):
-                if seq[i:i+n]==pat:
-                    nxt=seq[i+n]
-                    if nxt in ('D','T'):
-                        global_scores[nxt]+=n*n
-        global_prob=card_prob if card_total else pair_prob
-        if global_scores:
-            total=sum(global_scores.values())
-            gp={r:global_scores[r]/total for r in ('D','T')}
-            global_prob={r:0.70*gp[r]+0.30*global_prob[r] for r in ('D','T')}
-
-        # VIDEO REFERENCE IS FIXED PRIMARY SIGNAL.
-        # Other signals only stabilize the result when the reference sample is small.
-        if reference_prob is not None:
-            if video_ref['matches']>=5:
-                rw,pw,cw,gw=0.75,0.10,0.10,0.05
-            elif video_ref['matches']>=2:
-                rw,pw,cw,gw=0.70,0.15,0.10,0.05
-            else:
-                rw,pw,cw,gw=0.55,0.20,0.15,0.10
-            final={
-                r:(rw*reference_prob[r])+
-                  (pw*pair_pattern_prob[r])+
-                  (cw*pair_prob[r])+
-                  (gw*global_prob[r])
-                for r in ('D','T')
-            }
-        elif pair_pattern_scores:
-            final={
-                r:(0.55*pair_pattern_prob[r])+
-                  (0.25*pair_prob[r])+
-                  (0.15*global_prob[r])+
-                  (0.05*card_prob[r])
-                for r in ('D','T')
-            }
-        elif pair_total:
-            final={
-                r:(0.45*pair_prob[r])+
-                  (0.30*card_prob[r])+
-                  (0.20*global_prob[r])+
-                  (0.05*0.5)
-                for r in ('D','T')
-            }
-        elif card_total:
-            final={r:0.75*card_prob[r]+0.25*global_prob[r] for r in ('D','T')}
+            nxt=self.data[i+1]
+            nr=normalize_result(nxt.get('result'))
+            if nr in RESULTS: next_results[nr]+=1
+            nd=clean_card(nxt.get('dragon','')); nt=clean_card(nxt.get('tiger',''))
+            if nd: next_numbers[nd]+=1
+            if nt: next_numbers[nt]+=1
+        own_counts=Counter(normalize_result(r.get('result')) for r in pair_rows)
+        if next_results:
+            pred=max(RESULTS,key=lambda x:next_results[x])
+            total=sum(next_results.values()) or 1
+        elif own_counts:
+            pred=max(RESULTS,key=lambda x:own_counts[x])
+            total=sum(own_counts.values()) or 1
         else:
-            final=global_prob
-
-        total=sum(final.values()) or 1.0
-        final={r:final[r]/total for r in ('D','T')}
-        pred=max(('D','T'),key=lambda r:final[r])
-        return pred,final[pred]*100
-
+            return 'NO PREDICTION',0.0
+        return pred,(next_results[pred] if next_results else own_counts[pred])/total*100
     def analyze(self):
         p=self.pair.get().upper().strip()
         # Record every Pair Analysis search without changing the existing statistical analysis.
@@ -1064,9 +980,9 @@ class App:
                 self.pair_history[-1]['prediction']=''
                 self.render_pair_history(); self.save_settings()
             return
-        maxres=max(RESULTS,key=lambda x:cnt[x])
         pred,pct=self.pattern_prediction(rows)
-        self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | MOST {pred} ({pct:.1f}%)')
+        next_occ=sum(1 for i,r in enumerate(self.data[:-1]) if clean_card(r.get('dragon',''))+clean_card(r.get('tiger',''))==p)
+        self.summary.set(f'PAIR {p} | CAME {len(rows)} TIMES | D {cnt["D"]} | T {cnt["T"]} | TIE {cnt["TIE"]} | EXCEL NEXT {pred} ({pct:.1f}%) | NEXT REF {next_occ}')
         self.current_prediction.set(pred)
         self.prediction_pct.set(f'{pct:.1f}%')
         if self.pair_history:
@@ -1353,6 +1269,23 @@ class App:
         self.show_result_history()
 
 
+    def reset_prediction_report(self):
+        if not messagebox.askyesno('RESET PREDICTION REPORT','Delete all Prediction Report history and reset its counters?'):
+            return
+        self.result_history=[]
+        self.current_prediction.set('')
+        self.prediction_pct.set('')
+        self.video_number_prediction.set('-')
+        self.video_number_prediction_pct.set('')
+        self.prediction_correct.set('')
+        self.actual_dragon.set('')
+        self.actual_tiger.set('')
+        self.final_result.set('D')
+        self.save_settings()
+        self.refresh_prediction_dashboard()
+        self._render_production_table()
+        self.status.set('PREDICTION REPORT RESET')
+        messagebox.showinfo('Prediction Report','Prediction Report has been reset successfully.')
     def show_prediction_reference(self):
         """Show the fixed 10-15 result reference and prediction formula audit."""
         win=tk.Toplevel(self.root)
