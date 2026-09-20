@@ -1301,7 +1301,8 @@ class App:
         for item in items:
             slot=tk.Frame(strip,bg='#111827',width=52,height=50,cursor='hand2')
             slot.pack(side='left',fill='y',padx=0)
-            slot.pack_propagate(False)            pred=normalize_result(item.get('prediction','')) or 'TIE'
+            slot.pack_propagate(False)
+            pred=normalize_result(item.get('prediction','')) or 'TIE'
             cv=self._circle(slot,pred,40)
             cv.pack(anchor='center',pady=2)
             cv.bind('<Button-1>',lambda e,it=item:self._show_pair_result_popup(it))
