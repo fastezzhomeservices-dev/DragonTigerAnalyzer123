@@ -62,6 +62,7 @@ class App:
         self.current_prediction = tk.StringVar(value='')
         self.prediction_pct = tk.StringVar(value='')
         self.video_number_prediction = tk.StringVar(value='-')
+        self.video_number_prediction_pct = tk.StringVar(value='')
         self.prediction_correct = tk.StringVar(value='')
         self.actual_dragon = tk.StringVar(value='')
         self.actual_tiger = tk.StringVar(value='')
@@ -384,7 +385,9 @@ class App:
         tk.Label(video_num_bar,text='10-15 ROUND MATCH → NEXT PATTI:',bg='#3f2a00',fg='white',
                  font=('Segoe UI',9,'bold')).pack(side='left')
         tk.Label(video_num_bar,textvariable=self.video_number_prediction,bg='#3f2a00',fg='#ffd166',
-                 font=('Segoe UI',11,'bold'),anchor='w').pack(side='left',padx=10,fill='x',expand=True)
+                 font=('Segoe UI',11,'bold'),anchor='w').pack(side='left',padx=10)
+        tk.Label(video_num_bar,textvariable=self.video_number_prediction_pct,bg='#3f2a00',fg='#fbbf24',
+                 font=('Segoe UI',10,'bold'),anchor='w').pack(side='left',padx=(0,10))
         tk.Label(video_num_bar,text='(SEPARATE FROM D/T PREDICTION)',bg='#3f2a00',fg='#fbbf24',
                  font=('Segoe UI',8,'bold')).pack(side='right',padx=10)
 
@@ -1580,11 +1583,15 @@ class App:
         number_top=self.get_video_number_prediction(ref_info)
         if hasattr(self,'video_number_prediction'):
             if number_top:
+                total_num=sum(cnt for _,cnt in number_top)
                 self.video_number_prediction.set('  |  '.join(f'{card} ({cnt})' for card,cnt in number_top))
+                self.video_number_prediction_pct.set(' | '.join(f'{card} {cnt/total_num*100:.1f}%' for card,cnt in number_top) if total_num else '')
             elif ref_info:
                 self.video_number_prediction.set('No next-patti reference')
+                self.video_number_prediction_pct.set('')
             else:
                 self.video_number_prediction.set('Need 10-15 actual results')
+                self.video_number_prediction_pct.set('')
 
         for (num,side),v in top:
             row=tk.Frame(self.chart_frame,bg='#111827'); row.pack(fill='x',pady=2)
