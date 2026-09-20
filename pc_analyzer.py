@@ -968,9 +968,9 @@ class App:
 
         # IMPORTANT: Pair Result must always come from the selected cards,
         # never from the statistical prediction. Example: 8A => Dragon 8 > Tiger A => D.
-        actual_pair_result=result_from_cards(d,t) or 'TIE'
-        result_color=RESULT_COLORS.get(actual_pair_result,'#7c3aed')
-        result_label=tk.Label(win,text=f'Result: {actual_pair_result}',bg='white',fg=result_color,
+        actual_pair_result=result_from_cards(d,t)
+        result_color=RESULT_COLORS.get(actual_pair_result,'#64748b')
+        result_label=tk.Label(win,text=f'Result: {actual_pair_result or "-"}',bg='white',fg=result_color,
                  font=('Segoe UI',8,'bold'))
         result_label.pack(pady=(1,1))
         tk.Label(win,text=f'Prediction: {pred}',bg='white',fg='#475569',
@@ -979,6 +979,20 @@ class App:
                  bg='white',fg='#475569',font=('Segoe UI',6,'bold')).pack(pady=1)
 
         # Result is fixed from the actual Dragon/Tiger cards; no manual override is allowed.
+        def delete_this_result():
+            try:
+                idx=next((i for i,x in enumerate(self.pair_history) if x is item), -1)
+                if idx < 0:
+                    idx=next((i for i,x in enumerate(self.pair_history)
+                              if x.get('time')==item.get('time') and x.get('pair')==item.get('pair')), -1)
+                if idx >= 0:
+                    del self.pair_history[idx]
+                    self.save_settings()
+                    self.render_pair_history()
+                win.destroy()
+            except Exception as e:
+                messagebox.showerror('Delete Result',str(e))
+
         # Large red DELETE RESULT button — deliberately placed before CLOSE and kept in view.
         delete_btn=tk.Button(win,text='DELETE RESULT',command=delete_this_result,bg='#b91c1c',fg='white',
                   activebackground='#dc2626',activeforeground='white',
