@@ -49,6 +49,32 @@ def normalize_result(v):
     return ''
 
 
+def card_rank(card):
+    card = clean_card(card)
+    if not card:
+        return -1
+    return CARDS.index(card)
+
+
+def result_from_cards(dragon, tiger):
+    """
+    Always derive D/T/TIE from the actual Dragon and Tiger cards.
+    Dragon/Tiger ranking is A,2,3,...,10,J,Q,K, so 8A means
+    Dragon=8 > Tiger=A and must be D.
+    """
+    d = clean_card(dragon)
+    t = clean_card(tiger)
+    if not d or not t:
+        return ''
+    dr = card_rank(d)
+    tr = card_rank(t)
+    if dr > tr:
+        return 'D'
+    if tr > dr:
+        return 'T'
+    return 'TIE'
+
+
 class App:
     def __init__(self, root):
         self.root = root
@@ -1647,7 +1673,10 @@ class App:
                 if len(row)<4: continue
                 try: sno=int(row[0])
                 except: continue
-                d=clean_card(row[1]); t=clean_card(row[2]); res=normalize_result(row[3])
+                d=clean_card(row[1]); t=clean_card(row[2])
+                # RESULT is derived from the two actual cards, not trusted from
+                # a possibly wrong source/result column. Example: 8A => D.
+                res=result_from_cards(d, t) if d and t else normalize_result(row[3])
                 if d and t and res and sno not in seen:
                     out.append({'sno':sno,'round_id':str(row[4]) if len(row)>4 else '','time':str(row[5]) if len(row)>5 else '','dragon':d,'tiger':t,'result':res,'date':str(row[6]) if len(row)>6 else ''}); seen.add(sno)
             out.sort(key=lambda r:r['sno']); self.data=out; self.refresh(); messagebox.showinfo('Import',f'Imported {len(out)} unique rounds.')
@@ -1684,10 +1713,14 @@ class App:
             res=normalize_result(re.search(r'\b(DRAGON|TIGER|TIE|DRAW)\b',line,re.I).group(1)) if re.search(r'\b(DRAGON|TIGER|TIE|DRAW)\b',line,re.I) else ''
             cards=[]
             for token in re.findall(r'(?<![A-Z0-9])(10|[2-9AJQK])(?![A-Z0-9])',line.upper()): cards.append(token)
-            if rid and res:
-                d=cards[0] if len(cards)>=2 else ''
-                t=cards[1] if len(cards)>=2 else ''
-                out.append({'round_id':rid,'time':'','dragon':d,'tiger':t,'result':res,'date':self.collect_date.get()})
+            if rid and len(cards)>=2:
+                d=clean_card(cards[0]); t=clean_card(cards[1])
+                # Prefer the card-derived winner so pasted rows cannot invert D/T.
+                derived=result_from_cards(d, t)
+                if derived:
+                    res=derived
+                if res:
+                    out.append({'round_id':rid,'time':'','dragon':d,'tiger':t,'result':res,'date':self.collect_date.get()})
         return out
 
     def merge_collected(self, incoming):
