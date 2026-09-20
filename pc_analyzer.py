@@ -1670,28 +1670,101 @@ class App:
         cv.create_text(left,8,anchor='w',text='Latest 40 rounds | bar = result | label = D/T card numbers',fill='#cbd5e1',font=('Segoe UI',9,'bold'))
 
     def import_data(self):
-        path=filedialog.askopenfilename(filetypes=[('Excel','*.xlsx'),('CSV','*.csv'),('All files','*.*')])
-        if not path:return
+        path=filedialog.askopenfilename(
+            title='Import Dragon/Tiger Data',
+            filetypes=[('Excel','*.xlsx'),('CSV','*.csv'),('All files','*.*')]
+        )
+        if not path:
+            return
         try:
             rows=[]
+            source_name=os.path.basename(path)
             if path.lower().endswith('.csv'):
-                with open(path,newline='',encoding='utf-8-sig') as f: rows=list(csv.reader(f))
+                with open(path,newline='',encoding='utf-8-sig') as f:
+                    rows=list(csv.reader(f))
             else:
                 from openpyxl import load_workbook
-                wb=load_workbook(path,data_only=True); ws=wb.active; rows=list(ws.iter_rows(values_only=True))
+                wb=load_workbook(path,data_only=True,read_only=True)
+                # Auto-detect the first non-empty sheet instead of assuming active sheet.
+                ws=None
+                for candidate in wb.worksheets:
+                    if candidate.max_row and candidate.max_column:
+                        first=list(candidate.iter_rows(min_row=1,max_row=1,values_only=True))
+                        if first and any(v not in (None,'') for v in first[0]):
+                            ws=candidate
+                            break
+                if ws is None:
+                    raise ValueError('Excel file has no readable data.')
+                rows=list(ws.iter_rows(values_only=True))
+            if not rows:
+                raise ValueError('No rows found in the selected file.')
+
+            # Accept common header names and also plain 4-column files:
+            # S NO | DRAGON | TIGER | RESULT
+            header_idx=-1
+            col_sno=0; col_d=1; col_t=2; col_res=3; col_round=4; col_time=5; col_date=6
+            for i,row in enumerate(rows[:20]):
+                headers=[str(v or '').strip().upper().replace('.','') for v in row]
+                joined=' '.join(headers)
+                if ('DRAGON' in joined and 'TIGER' in joined) or ('S NO' in joined and 'DRAGON' in joined):
+                    def find_header(names, default):
+                        for j,h in enumerate(headers):
+                            if h in names or any(n in h for n in names):
+                                return j
+                        return default
+                    col_sno=find_header({'S NO','SNO','NO','SR NO','SERIAL'},0)
+                    col_d=find_header({'DRAGON','D'},1)
+                    col_t=find_header({'TIGER','T'},2)
+                    col_res=find_header({'RESULT','WINNER','OUTCOME'},3)
+                    col_round=find_header({'ROUND ID','ROUNDID','ROUND'},4)
+                    col_time=find_header({'TIME','MATCH TIME'},5)
+                    col_date=find_header({'DATE','COLLECT DATE'},6)
+                    header_idx=i
+                    break
+
             out=[]; seen=set()
-            for row in rows:
-                if len(row)<4: continue
-                try: sno=int(row[0])
-                except: continue
-                d=clean_card(row[1]); t=clean_card(row[2])
-                # RESULT is derived from the two actual cards, not trusted from
-                # a possibly wrong source/result column. Example: 8A => D.
-                res=result_from_cards(d, t) if d and t else normalize_result(row[3])
-                if d and t and res and sno not in seen:
-                    out.append({'sno':sno,'round_id':str(row[4]) if len(row)>4 else '','time':str(row[5]) if len(row)>5 else '','dragon':d,'tiger':t,'result':res,'date':str(row[6]) if len(row)>6 else ''}); seen.add(sno)
-            out.sort(key=lambda r:r['sno']); self.data=out; self.refresh(); messagebox.showinfo('Import',f'Imported {len(out)} unique rounds.')
-        except Exception as e: messagebox.showerror('Import error',str(e))
+            for row in rows[header_idx+1:]:
+                if not row or len(row)<=max(col_sno,col_d,col_t):
+                    continue
+                raw_sno=row[col_sno]
+                try:
+                    sno=int(float(str(raw_sno).strip()))
+                except Exception:
+                    continue
+                d=clean_card(row[col_d] if col_d < len(row) else '')
+                t=clean_card(row[col_t] if col_t < len(row) else '')
+                if not d or not t or sno in seen:
+                    continue
+                # Always derive the real result from the two cards.
+                res=result_from_cards(d,t)
+                if not res:
+                    res=normalize_result(row[col_res] if col_res < len(row) else '')
+                if not res:
+                    continue
+                out.append({
+                    'sno':sno,
+                    'round_id':str(row[col_round]).strip() if col_round < len(row) and row[col_round] not in (None,'') else '',
+                    'time':str(row[col_time]).strip() if col_time < len(row) and row[col_time] not in (None,'') else '',
+                    'dragon':d,
+                    'tiger':t,
+                    'result':res,
+                    'date':str(row[col_date]).strip() if col_date < len(row) and row[col_date] not in (None,'') else ''
+                })
+                seen.add(sno)
+
+            if not out:
+                raise ValueError(
+                    'No valid Dragon/Tiger rows detected. Expected columns like '
+                    'S NO, DRAGON, TIGER, RESULT.'
+                )
+
+            out.sort(key=lambda r:r['sno'])
+            self.data=out
+            self.refresh()
+            self.status.set(f'Imported {len(out)} rounds from {source_name}')
+            messagebox.showinfo('Import',f'Imported {len(out)} unique rounds successfully.\\n\\nFile: {source_name}')
+        except Exception as e:
+            messagebox.showerror('Import error',f'Could not import this file.\\n\\n{e}')
 
     def export_data(self):
         if not self.data: messagebox.showwarning('Export','No data to export.'); return
