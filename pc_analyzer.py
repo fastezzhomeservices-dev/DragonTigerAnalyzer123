@@ -61,6 +61,7 @@ class App:
         self.result_history = []
         self.current_prediction = tk.StringVar(value='')
         self.prediction_pct = tk.StringVar(value='')
+        self.video_number_prediction = tk.StringVar(value='-')
         self.prediction_correct = tk.StringVar(value='')
         self.actual_dragon = tk.StringVar(value='')
         self.actual_tiger = tk.StringVar(value='')
@@ -370,6 +371,22 @@ class App:
         tk.Label(refbar,textvariable=self.prediction_pct,bg=PANEL,fg=YELLOW,font=('Segoe UI',9,'bold'),
                  width=8).pack(side='left',padx=(0,8))
         ref_combo.bind('<<ComboboxSelected>>',run_reference_search)
+
+        # VIDEO NUMBER/PATTI PREDICTION is deliberately separate from the existing
+        # D/T prediction.  The D/T prediction remains driven by the normal app
+        # formula, while this box reports the card-number signal derived only from
+        # the selected video-style 10-15 round historical reference.
+        video_num_bar=tk.Frame(content,bg='#3f2a00',highlightthickness=1,highlightbackground='#f59e0b',height=42)
+        video_num_bar.pack(fill='x',padx=12,pady=(0,2))
+        video_num_bar.pack_propagate(False)
+        tk.Label(video_num_bar,text='VIDEO NUMBER PREDICTION',bg='#3f2a00',fg='#ffd166',
+                 font=('Segoe UI',9,'bold')).pack(side='left',padx=(10,14))
+        tk.Label(video_num_bar,text='10-15 ROUND MATCH → NEXT PATTI:',bg='#3f2a00',fg='white',
+                 font=('Segoe UI',9,'bold')).pack(side='left')
+        tk.Label(video_num_bar,textvariable=self.video_number_prediction,bg='#3f2a00',fg='#ffd166',
+                 font=('Segoe UI',11,'bold'),anchor='w').pack(side='left',padx=10,fill='x',expand=True)
+        tk.Label(video_num_bar,text='(SEPARATE FROM D/T PREDICTION)',bg='#3f2a00',fg='#fbbf24',
+                 font=('Segoe UI',8,'bold')).pack(side='right',padx=10)
 
         # Pair search history + TOP 4 NEXT PATTI.
         # The TOP 4 column shows the most frequent cards in the round immediately
@@ -830,6 +847,53 @@ class App:
         primary['all_windows']=windows
         primary['chain']=''.join(chain[-15:])
         return primary
+
+    def get_video_number_prediction(self, video_ref=None):
+        """
+        Separate VIDEO NUMBER/PATTI signal.
+        Uses the exact same selected video-style 10-15 result pattern as the
+        D/T reference, then counts the Dragon/Tiger cards in the immediate next
+        D/T round for every historical match. This does not replace the normal
+        D/T prediction.
+        """
+        if video_ref is None:
+            video_ref=self.get_video_reference()
+        if not video_ref:
+            return []
+
+        # Keep original imported-row positions alongside the D/T-only stream so
+        # the next historical D/T round can be mapped back to its actual cards.
+        chain_rows=[]
+        for idx,row in enumerate(self.data):
+            res=normalize_result(row.get('result'))
+            if res in ('D','T'):
+                chain_rows.append((idx,row,res))
+        n=int(video_ref.get('length',0) or 0)
+        pattern=str(video_ref.get('pattern','') or '')
+        if n < 4 or len(chain_rows) <= n or not pattern:
+            return []
+
+        counts=Counter()
+        matched_rounds=0
+        for i in range(len(chain_rows)-n):
+            seq=''.join(x[2] for x in chain_rows[i:i+n])
+            if seq != pattern:
+                continue
+            # The next D/T round after the exact historical pattern.
+            nxt=chain_rows[i+n][1]
+            d=clean_card(nxt.get('dragon',''))
+            t=clean_card(nxt.get('tiger',''))
+            if d:
+                counts[d]+=1
+            if t:
+                counts[t]+=1
+            matched_rounds+=1
+
+        top=sorted(
+            counts.items(),
+            key=lambda x:(-x[1], CARDS.index(x[0]) if x[0] in CARDS else 99)
+        )[:4]
+        return top
 
     def pattern_prediction(self, pair_rows):
         # PRIMARY FORMULA: FIXED VIDEO-REPORT STYLE 10-15 RESULT REFERENCE.
@@ -1507,6 +1571,16 @@ class App:
                 )
             else:
                 self.reference_pattern_label.configure(text='Need 10-15 actual results')
+
+        # Keep VIDEO NUMBER PREDICTION separate from the D/T prediction.
+        number_top=self.get_video_number_prediction(ref_info)
+        if hasattr(self,'video_number_prediction'):
+            if number_top:
+                self.video_number_prediction.set('  |  '.join(f'{card} ({cnt})' for card,cnt in number_top))
+            elif ref_info:
+                self.video_number_prediction.set('No next-patti reference')
+            else:
+                self.video_number_prediction.set('Need 10-15 actual results')
 
         for (num,side),v in top:
             row=tk.Frame(self.chart_frame,bg='#111827'); row.pack(fill='x',pady=2)
