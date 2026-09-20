@@ -1,4 +1,3 @@
-; Inno Setup installer for Dragon Tiger Analyzer
 [Setup]
 AppName=Dragon Tiger Analyzer v2.0
 AppVersion=2.0.0
@@ -10,9 +9,11 @@ Compression=lzma
 SolidCompression=yes
 PrivilegesRequired=admin
 WizardStyle=modern
+ArchitecturesInstallIn64BitMode=x64compatible
+UninstallDisplayName=Dragon Tiger Analyzer v2.0
 
 [Files]
-Source: "dist\DragonTigerAnalyzerPC.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\DragonTigerAnalyzerPC\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autodesktop}\Dragon Tiger Analyzer v2.0 FINAL"; Filename: "{app}\DragonTigerAnalyzerPC.exe"; WorkingDir: "{app}"
