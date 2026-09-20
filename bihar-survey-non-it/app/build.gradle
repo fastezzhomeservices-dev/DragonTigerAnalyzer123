@@ -1,0 +1,14 @@
+plugins { id 'com.android.application' }
+android { namespace 'com.biharsurvey.nonit'; compileSdk 35
+ defaultConfig { applicationId 'com.biharsurvey.nonit'; minSdk 24; targetSdk 35; versionCode 1; versionName '1.0' }
+}
+dependencies {
+ implementation 'androidx.appcompat:appcompat:1.7.0'
+ implementation 'androidx.activity:activity:1.9.3'
+ implementation 'androidx.core:core:1.15.0'
+ implementation 'com.google.android.material:material:1.12.0'
+ implementation 'com.google.mlkit:text-recognition:16.0.1'
+ implementation 'com.google.mlkit:image-labeling:17.0.9'
+ implementation 'com.google.mlkit:barcode-scanning:17.3.0'
+ implementation 'org.apache.poi:poi-ooxml:5.4.1'
+}
