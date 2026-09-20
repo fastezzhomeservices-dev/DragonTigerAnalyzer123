@@ -70,18 +70,35 @@ public class MainActivity extends AppCompatActivity {
 
  void home(){
   root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(0xfff3f7fb);
-  LinearLayout bar=new LinearLayout(this); bar.setPadding(dp(16),dp(14),dp(16),dp(8)); bar.setGravity(Gravity.CENTER_VERTICAL);
-  TextView t=title(APP); t.setTextSize(20); bar.addView(t,new LinearLayout.LayoutParams(0,-2,1)); TextView u=label("User: "+currentUser()); u.setTextSize(12); bar.addView(u);
-  Button ex=smallButton("EXPORT EXCEL"); bar.addView(ex); ex.setOnClickListener(v->exportExcel());
-  root.addView(bar);
-  countText=new TextView(this); countText.setText("Saved entries: "+db.count()); countText.setTextColor(0xff35546f); countText.setTextSize(14); countText.setPadding(dp(18),0,dp(18),dp(8)); root.addView(countText);
-  ScrollView sv=new ScrollView(this); body=new LinearLayout(this); body.setOrientation(LinearLayout.VERTICAL); body.setPadding(dp(14),dp(2),dp(14),dp(30)); sv.addView(body);
-  root.addView(sv,new LinearLayout.LayoutParams(-1,0,1)); setContentView(root);
-  for(String c:categories){
-   Button x=categoryButton(c); body.addView(x,new LinearLayout.LayoutParams(-1,dp(58))); x.setOnClickListener(v->{if(c.equals("Edit/Rejected Entry"))showSaved();else if(HEADERS.containsKey(c))form(c);else Toast.makeText(this,"Fields for this category are not supplied yet.",Toast.LENGTH_LONG).show();});
+  LinearLayout header=new LinearLayout(this); header.setOrientation(LinearLayout.VERTICAL); header.setGravity(Gravity.CENTER_HORIZONTAL);
+  GradientDrawable hg=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0xff0756b5,0xff0a7e9f}); header.setBackground(hg);
+  header.setPadding(dp(16),dp(12),dp(16),dp(12));
+  TextView mark=new TextView(this); mark.setText("⚡"); mark.setTextColor(Color.WHITE); mark.setTextSize(34); mark.setGravity(Gravity.CENTER);
+  GradientDrawable mg=new GradientDrawable(); mg.setColor(0x33ffffff); mg.setShape(GradientDrawable.OVAL); mark.setBackground(mg);
+  header.addView(mark,new LinearLayout.LayoutParams(dp(68),dp(68)));
+  TextView app=label(APP); app.setTextColor(Color.WHITE); app.setGravity(Gravity.CENTER); app.setTextSize(19); app.setTypeface(null,1); header.addView(app,new LinearLayout.LayoutParams(-1,-2));
+  TextView sub=label("Bihar State Power • Asset Survey"); sub.setTextColor(0xffe8f7ff); sub.setGravity(Gravity.CENTER); sub.setTextSize(12); header.addView(sub);
+  root.addView(header);
+  LinearLayout info=sectionCard(); info.setPadding(dp(14),dp(7),dp(14),dp(7));
+  LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
+  TextView usr=label("USER\n"+currentUser()); usr.setTextSize(12); usr.setTextColor(0xff17324d); row.addView(usr,new LinearLayout.LayoutParams(0,-2,1));
+  TextView gpsHome=label("GPS\n"+(Math.abs(lat)>0.000001?String.format(Locale.US,"%.5f, %.5f",lat,lon):"Waiting…")); gpsHome.setTextSize(12); gpsHome.setTextColor(0xff2d5d3d); row.addView(gpsHome);
+  TextView saved=label("SAVED\n"+db.count()); saved.setTextSize(12); saved.setTextColor(0xff17324d); saved.setGravity(Gravity.RIGHT); row.addView(saved,new LinearLayout.LayoutParams(0,-2,1));
+  info.addView(row); root.addView(info);
+  countText=new TextView(this); countText.setText("SELECT SURVEY CATEGORY"); countText.setTextSize(13); countText.setTypeface(null,1); countText.setTextColor(0xff35546f); countText.setPadding(dp(18),dp(2),dp(18),dp(4)); root.addView(countText);
+  ScrollView sv=new ScrollView(this); body=new LinearLayout(this); body.setOrientation(LinearLayout.VERTICAL); body.setPadding(dp(14),dp(2),dp(14),dp(24)); sv.addView(body);
+  root.addView(sv,new LinearLayout.LayoutParams(-1,0,1));
+  LinearLayout bottom=new LinearLayout(this); bottom.setPadding(dp(14),dp(6),dp(14),dp(10));
+  Button ex=smallButton("EXPORT EXCEL"); bottom.addView(ex,new LinearLayout.LayoutParams(0,dp(46),1)); ex.setOnClickListener(v->exportExcel());
+  Button logout=smallButton("LOGOUT"); LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(46),1); lp.setMargins(dp(8),0,0,0); bottom.addView(logout,lp);
+  logout.setOnClickListener(v->{getPreferences(0).edit().clear().apply();login();});
+  root.addView(bottom); setContentView(root);
+  for(int i=0;i<categories.length;i++){
+   String c=categories[i]; Button x=categoryButton(c); x.setText((i+1)+"   "+c); x.setTextSize(14);
+   body.addView(x,new LinearLayout.LayoutParams(-1,dp(54)));
+   x.setOnClickListener(v->{if(c.equals("Edit/Rejected Entry"))showSaved();else if(HEADERS.containsKey(c))form(c);else Toast.makeText(this,"Fields for this category are not supplied yet.",Toast.LENGTH_LONG).show();});
   }
  }
-
  void form(String cat){
   activeCategory=cat; batch.clear(); suggestedType=""; body.removeAllViews(); body.addView(title(cat+"  •  Survey"));
   LinearLayout info=sectionCard(); body.addView(info);
