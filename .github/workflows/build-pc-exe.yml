@@ -1,4 +1,5 @@
 name: Build PC EXE + Installer
+# PC build trigger refreshed after source syntax fix.
 on:
   workflow_dispatch:
   push:
