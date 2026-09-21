@@ -46,7 +46,9 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Entry> batch=new ArrayList<>();
     SurveyDbHelper db; ExecutorService io=Executors.newSingleThreadExecutor();
     Uri pendingPhotoUri; String pendingPhotoPath="";
-    ActivityResultLauncher<Uri> takePhoto;\n    ActivityResultLauncher<String> pickPhoto;\n    ImageView photoPreview;
+    ActivityResultLauncher<Uri> takePhoto;
+    ActivityResultLauncher<String> pickPhoto;
+    ImageView photoPreview;
     final String[] categories={"Building","Office Land","Office Equipment","Office Furniture","Residential Colony","Vehicle","Plant & Machinery","Store Inventory","Edit/Rejected Entry"};
     final Map<String,String[]> HEADERS=new LinkedHashMap<>();
     final HashMap<String,View> fieldViews=new HashMap<>();
@@ -62,7 +64,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override public void onCreate(Bundle b){
         super.onCreate(b);
-        takePhoto=registerForActivityResult(new ActivityResultContracts.TakePicture(),ok->{if(ok&&pendingPhotoUri!=null){showPhotoPreview(pendingPhotoUri);runVision(pendingPhotoUri);}else deletePendingPhoto();});\n        pickPhoto=registerForActivityResult(new ActivityResultContracts.GetContent(),uri->{if(uri!=null)importUploadedPhoto(uri);});
+        takePhoto=registerForActivityResult(new ActivityResultContracts.TakePicture(),ok->{if(ok&&pendingPhotoUri!=null){showPhotoPreview(pendingPhotoUri);runVision(pendingPhotoUri);}else deletePendingPhoto();});
+        pickPhoto=registerForActivityResult(new ActivityResultContracts.GetContent(),uri->{if(uri!=null)importUploadedPhoto(uri);});
         buildHeaders(); db=new SurveyDbHelper(this); loadHierarchy();
         if(!loggedIn()){login();return;} home(); requestPerms();
     }
@@ -114,9 +117,12 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout ht=new LinearLayout(this);ht.setOrientation(LinearLayout.VERTICAL);TextView app=label(APP);app.setTextColor(android.graphics.Color.WHITE);app.setTextSize(18);app.setTypeface(null,1);ht.addView(app);TextView sub=label("Bihar State Power • Asset Survey");sub.setTextColor(0xffe8f7ff);sub.setTextSize(12);ht.addView(sub);header.addView(ht,new LinearLayout.LayoutParams(0,-2,1));
         root.addView(header);
         LinearLayout info=sectionCard(); LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
-        TextView usr=label("USER\n"+currentUser());usr.setTextColor(primaryText());row.addView(usr,new LinearLayout.LayoutParams(0,-2,1));
-        TextView gpsHome=label("GPS\n"+(Math.abs(lat)>0.000001?String.format(Locale.US,"%.5f, %.5f",lat,lon):"Waiting…"));gpsHome.setTextColor(0xff23633a);row.addView(gpsHome,new LinearLayout.LayoutParams(0,-2,1));
-        TextView saved=label("SAVED\n"+db.count());saved.setTextColor(primaryText());saved.setGravity(Gravity.RIGHT);row.addView(saved,new LinearLayout.LayoutParams(0,-2,1));info.addView(row);root.addView(info);
+        TextView usr=label("USER
+"+currentUser());usr.setTextColor(primaryText());row.addView(usr,new LinearLayout.LayoutParams(0,-2,1));
+        TextView gpsHome=label("GPS
+"+(Math.abs(lat)>0.000001?String.format(Locale.US,"%.5f, %.5f",lat,lon):"Waiting…"));gpsHome.setTextColor(0xff23633a);row.addView(gpsHome,new LinearLayout.LayoutParams(0,-2,1));
+        TextView saved=label("SAVED
+"+db.count());saved.setTextColor(primaryText());saved.setGravity(Gravity.RIGHT);row.addView(saved,new LinearLayout.LayoutParams(0,-2,1));info.addView(row);root.addView(info);
         countText=label("SELECT SURVEY CATEGORY");countText.setTextColor(primaryText());root.addView(countText);
         ScrollView sv=new ScrollView(this);body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(14),dp(2),dp(14),dp(24));sv.addView(body);root.addView(sv,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout bottom=new LinearLayout(this);bottom.setPadding(dp(14),dp(6),dp(14),dp(10));
@@ -130,7 +136,9 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(18),dp(22),dp(18),dp(18));panel.setBackgroundColor(surface());
         TextView h=title("THEME");panel.addView(h);TextView info=label("Choose interface theme");panel.addView(info);
         Button a=smallButton("1 • Light Blue");Button b=smallButton("2 • Clean White");Button c=smallButton("3 • Dark");panel.addView(a,new LinearLayout.LayoutParams(-1,dp(50)));panel.addView(b,new LinearLayout.LayoutParams(-1,dp(50)));panel.addView(c,new LinearLayout.LayoutParams(-1,dp(50)));
-        TextView app=label("\n"+APP+"\nUser: "+currentUser());app.setTextColor(primaryText());panel.addView(app);
+        TextView app=label("
+"+APP+"
+User: "+currentUser());app.setTextColor(primaryText());panel.addView(app);
         PopupWindow pw=new PopupWindow(panel,Math.round(getResources().getDisplayMetrics().widthPixels*0.82f),-1,true);pw.setBackgroundDrawable(round(android.graphics.Color.WHITE,0));pw.setOutsideTouchable(true);pw.setElevation(dp(10));
         a.setOnClickListener(v->{applyThemeSelection(0);pw.dismiss();home();});b.setOnClickListener(v->{applyThemeSelection(1);pw.dismiss();home();});c.setOnClickListener(v->{applyThemeSelection(2);pw.dismiss();home();});pw.showAtLocation(root,Gravity.START|Gravity.TOP,0,0);
     }
@@ -154,7 +162,12 @@ public class MainActivity extends AppCompatActivity {
             View v=createField(h);fieldViews.put(h,v);formBox.addView(v);
         }
         LinearLayout actions=sectionCard();body.addView(actions);
-        photoPreview=new ImageView(this); photoPreview.setAdjustViewBounds(true); photoPreview.setScaleType(ImageView.ScaleType.CENTER_INSIDE); photoPreview.setBackground(round(theme()==2?0xff26343f:0xffeef5f9,14)); photoPreview.setVisibility(View.GONE); actions.addView(photoPreview,new LinearLayout.LayoutParams(-1,dp(240)));\n        LinearLayout photoBtns=new LinearLayout(this); photoBtns.setOrientation(LinearLayout.HORIZONTAL);\n        Button cam=primary("📷 CAMERA"); photoBtns.addView(cam,new LinearLayout.LayoutParams(0,dp(54),1)); cam.setOnClickListener(v->startCamera());\n        Button upload=primary("⬆ UPLOAD"); LinearLayout.LayoutParams upLp=new LinearLayout.LayoutParams(0,dp(54),1); upLp.setMargins(dp(8),0,0,0); photoBtns.addView(upload,upLp); upload.setOnClickListener(v->pickPhoto.launch("image/*"));\n        actions.addView(photoBtns);\n        TextView photoNote=label("Photo: Camera or Upload • Original quality preserved where possible • Preview shown after selection"); photoNote.setTextColor(secondaryText()); actions.addView(photoNote);
+        photoPreview=new ImageView(this); photoPreview.setAdjustViewBounds(true); photoPreview.setScaleType(ImageView.ScaleType.CENTER_INSIDE); photoPreview.setBackground(round(theme()==2?0xff26343f:0xffeef5f9,14)); photoPreview.setVisibility(View.GONE); actions.addView(photoPreview,new LinearLayout.LayoutParams(-1,dp(240)));
+        LinearLayout photoBtns=new LinearLayout(this); photoBtns.setOrientation(LinearLayout.HORIZONTAL);
+        Button cam=primary("📷 CAMERA"); photoBtns.addView(cam,new LinearLayout.LayoutParams(0,dp(54),1)); cam.setOnClickListener(v->startCamera());
+        Button upload=primary("⬆ UPLOAD"); LinearLayout.LayoutParams upLp=new LinearLayout.LayoutParams(0,dp(54),1); upLp.setMargins(dp(8),0,0,0); photoBtns.addView(upload,upLp); upload.setOnClickListener(v->pickPhoto.launch("image/*"));
+        actions.addView(photoBtns);
+        TextView photoNote=label("Photo: Camera or Upload • Original quality preserved where possible • Preview shown after selection"); photoNote.setTextColor(secondaryText()); actions.addView(photoNote);
         Button review=primary("DATA REVIEW • BEFORE SAVE");actions.addView(review,new LinearLayout.LayoutParams(-1,dp(54)));review.setOnClickListener(v->reviewBeforeSave());
         TextView cap=label("Batch: "+batch.size()+" / "+MAX_BATCH+" • Photo is mandatory • GPS is mandatory");cap.setTextColor(secondaryText());actions.addView(cap);countText=cap;
         Button back=smallButton("BACK HOME");actions.addView(back,new LinearLayout.LayoutParams(-1,dp(48)));back.setOnClickListener(v->home());
@@ -227,7 +240,10 @@ public class MainActivity extends AppCompatActivity {
         for(String h:HEADERS.get(activeCategory))e.values.put(h,get(h));
         e.values.put("ENTRYDATE",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.US).format(new Date(e.time)));e.values.put("Unique Id",String.valueOf(e.time));
         final ScrollView sv=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(20),dp(8),dp(20),dp(8));
-        box.addView(title("Data Review"));StringBuilder sb=new StringBuilder();for(Map.Entry<String,String> en:e.values.entrySet())if(!en.getValue().isEmpty())sb.append(en.getKey()).append(" : ").append(en.getValue()).append("\n");sb.append("\nGPS : ").append(String.format(Locale.US,"%.6f, %.6f",lat,lon)).append("\nPhoto : ").append(e.photoPath.isEmpty()?"MISSING":"READY");TextView d=label(sb.toString());d.setTextColor(primaryText());box.addView(d);sv.addView(box);
+        box.addView(title("Data Review"));StringBuilder sb=new StringBuilder();for(Map.Entry<String,String> en:e.values.entrySet())if(!en.getValue().isEmpty())sb.append(en.getKey()).append(" : ").append(en.getValue()).append("
+");sb.append("
+GPS : ").append(String.format(Locale.US,"%.6f, %.6f",lat,lon)).append("
+Photo : ").append(e.photoPath.isEmpty()?"MISSING":"READY");TextView d=label(sb.toString());d.setTextColor(primaryText());box.addView(d);sv.addView(box);
         new AlertDialog.Builder(this).setView(sv).setNegativeButton("EDIT",null).setPositiveButton("SAVE",(dialog,which)->{batch.add(e);saveBatch();}).show();
     }
 
@@ -241,7 +257,29 @@ public class MainActivity extends AppCompatActivity {
         try{String id=String.valueOf(System.currentTimeMillis());File dir=new File(getExternalFilesDir(null),"survey_photos");if(!dir.exists())dir.mkdirs();File f=new File(dir,"ITEM_"+id+".jpg");pendingPhotoPath=f.getAbsolutePath();pendingPhotoUri=FileProvider.getUriForFile(this,"com.biharsurvey.nonit.fileprovider",f);takePhoto.launch(pendingPhotoUri);}catch(Exception e){Toast.makeText(this,"Camera start failed: "+e.getMessage(),Toast.LENGTH_LONG).show();}
     }
 
-    void importUploadedPhoto(Uri uri){\n        try{\n            String id=String.valueOf(System.currentTimeMillis());\n            File dir=new File(getExternalFilesDir(null),"survey_photos"); if(!dir.exists())dir.mkdirs();\n            String name="UPLOAD_"+id+".jpg";\n            String mime=getContentResolver().getType(uri);\n            if(mime!=null && mime.toLowerCase(Locale.US).contains("png")) name="UPLOAD_"+id+".png";\n            File out=new File(dir,name);\n            try(InputStream in=getContentResolver().openInputStream(uri); OutputStream os=new FileOutputStream(out)){\n                if(in==null) throw new IOException("Unable to open selected photo");\n                byte[] buf=new byte[64*1024]; int n; while((n=in.read(buf))!=-1) os.write(buf,0,n);\n            }\n            pendingPhotoPath=out.getAbsolutePath(); pendingPhotoUri=Uri.fromFile(out);\n            showPhotoPreview(Uri.fromFile(out)); runVision(Uri.fromFile(out));\n            Toast.makeText(this,"Photo uploaded and preview ready.",Toast.LENGTH_SHORT).show();\n        }catch(Exception e){Toast.makeText(this,"Photo upload failed: "+e.getMessage(),Toast.LENGTH_LONG).show();}\n    }\n\n    void showPhotoPreview(Uri uri){\n        if(photoPreview==null)return; photoPreview.setImageURI(uri); photoPreview.setVisibility(View.VISIBLE);\n    }\n\n    void runVision(Uri uri){
+    void importUploadedPhoto(Uri uri){
+        try{
+            String id=String.valueOf(System.currentTimeMillis());
+            File dir=new File(getExternalFilesDir(null),"survey_photos"); if(!dir.exists())dir.mkdirs();
+            String name="UPLOAD_"+id+".jpg";
+            String mime=getContentResolver().getType(uri);
+            if(mime!=null && mime.toLowerCase(Locale.US).contains("png")) name="UPLOAD_"+id+".png";
+            File out=new File(dir,name);
+            try(InputStream in=getContentResolver().openInputStream(uri); OutputStream os=new FileOutputStream(out)){
+                if(in==null) throw new IOException("Unable to open selected photo");
+                byte[] buf=new byte[64*1024]; int n; while((n=in.read(buf))!=-1) os.write(buf,0,n);
+            }
+            pendingPhotoPath=out.getAbsolutePath(); pendingPhotoUri=Uri.fromFile(out);
+            showPhotoPreview(Uri.fromFile(out)); runVision(Uri.fromFile(out));
+            Toast.makeText(this,"Photo uploaded and preview ready.",Toast.LENGTH_SHORT).show();
+        }catch(Exception e){Toast.makeText(this,"Photo upload failed: "+e.getMessage(),Toast.LENGTH_LONG).show();}
+    }
+
+    void showPhotoPreview(Uri uri){
+        if(photoPreview==null)return; photoPreview.setImageURI(uri); photoPreview.setVisibility(View.VISIBLE);
+    }
+
+    void runVision(Uri uri){
         try{InputImage img=InputImage.fromFilePath(this,uri);TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(img).addOnSuccessListener(r->{String t=r.getText()==null?"":r.getText().trim();suggestedType=t.length()>80?t.substring(0,80):t;ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS).process(img).addOnSuccessListener(labels->{if(suggestedType.isEmpty()&&!labels.isEmpty())suggestedType=labels.get(0).getText();if(fieldViews.containsKey("Equipment Type")&&get("Equipment Type").isEmpty())put("Equipment Type",suggestedType);Toast.makeText(this,"Detected: "+(suggestedType.isEmpty()?"Review manually":suggestedType),Toast.LENGTH_LONG).show();}).addOnFailureListener(e->Toast.makeText(this,"Photo saved. Image identify unavailable.",Toast.LENGTH_SHORT).show());}).addOnFailureListener(e->Toast.makeText(this,"Photo saved. OCR unavailable.",Toast.LENGTH_SHORT).show());}catch(Exception e){Toast.makeText(this,"Photo saved. OCR error.",Toast.LENGTH_SHORT).show();}
     }
 
@@ -252,7 +290,9 @@ public class MainActivity extends AppCompatActivity {
 
     void showSaved(){
         ArrayList<SurveyDbHelper.EntryRow> rows=db.all();body.removeAllViews();body.addView(title("SAVED / REJECTED ENTRIES"));body.addView(label("Total records: "+rows.size()));
-        for(SurveyDbHelper.EntryRow e:rows){LinearLayout c=sectionCard();c.addView(label(e.category+" • "+e.itemType));TextView d=label(e.office+" | "+e.section+"\n"+e.uniqueId+"\nGPS: "+String.format(Locale.US,"%.6f, %.6f",e.lat,e.lon));d.setTextColor(secondaryText());c.addView(d);Button del=smallButton("DELETE");c.addView(del);del.setOnClickListener(v->{db.delete(e.id);deletePhoto(e.photoPath);showSaved();});body.addView(c);}
+        for(SurveyDbHelper.EntryRow e:rows){LinearLayout c=sectionCard();c.addView(label(e.category+" • "+e.itemType));TextView d=label(e.office+" | "+e.section+"
+"+e.uniqueId+"
+GPS: "+String.format(Locale.US,"%.6f, %.6f",e.lat,e.lon));d.setTextColor(secondaryText());c.addView(d);Button del=smallButton("DELETE");c.addView(del);del.setOnClickListener(v->{db.delete(e.id);deletePhoto(e.photoPath);showSaved();});body.addView(c);}
         Button back=smallButton("BACK HOME");body.addView(back,new LinearLayout.LayoutParams(-1,dp(48)));back.setOnClickListener(v->home());
     }
 
