@@ -29,6 +29,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.GZIPInputStream;
+import android.util.Base64;
 
 public class MainActivity extends AppCompatActivity {
     static final String APP="BIHAR SURVEY NON IT";
@@ -75,10 +77,15 @@ public class MainActivity extends AppCompatActivity {
 
     void loadHierarchy(){
         try{
-            InputStream in=getAssets().open("discom_hierarchy.csv"); BufferedReader br=new BufferedReader(new InputStreamReader(in));
-            String line; br.readLine();
-            while((line=br.readLine())!=null){String[] p=line.split(",",-1); if(p.length>=6) hierarchy.add(p);}
-            br.close();
+            InputStream raw=getAssets().open("discom_hierarchy.csv.gz.b64");
+            StringBuilder sb=new StringBuilder(); BufferedReader br=new BufferedReader(new InputStreamReader(raw));
+            String line; while((line=br.readLine())!=null) sb.append(line.trim()); br.close();
+            byte[] gz=Base64.decode(sb.toString(),Base64.DEFAULT);
+            GZIPInputStream gin=new GZIPInputStream(new ByteArrayInputStream(gz));
+            BufferedReader csv=new BufferedReader(new InputStreamReader(gin));
+            csv.readLine();
+            while((line=csv.readLine())!=null){String[] p=line.split(",",-1);if(p.length>=6)hierarchy.add(p);}
+            csv.close();
         }catch(Exception ignored){}
     }
 
