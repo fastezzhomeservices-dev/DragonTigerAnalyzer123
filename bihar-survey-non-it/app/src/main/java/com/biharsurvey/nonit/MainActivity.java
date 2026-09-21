@@ -215,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
         if(x.contains("asset lifecycle"))return dropdownInputWithOptions(new String[]{"--Select--","In Use","Active","Under Maintenance","Idle","Disposed"},h);
         if(x.equals("floor")||x.equals("size")||x.equals("capacity"))return dropdownInputWithOptions(new String[]{"--Select--","Ground Floor","1st Floor","2nd Floor","3rd Floor","4th Floor","5th Floor","Other"},h);
         if(x.equals("equipment type")||x.equals("item type"))return dropdownInputWithOptions(new String[]{"--Select--","Computer","Printer","AC","Cooler","Fan","Furniture","Generator","Solar","Other"},h);
+        if(x.equals("scheme name"))return dropdownInputWithOptions(new String[]{"--Select--","RAPDRP","11th Plan","12th Plan","13th Plan","11th & 12 th Plan","12th & 13th Plan","11th","APDRP","IPDS","RDSS","BRGF","HarGharBili","ADB","DDUGJY","PMGSY","PM-KUSUM","RGGVY","State Plan","Other"},h);
         if(x.equals("amc")||x.equals("warranty"))return dropdownInputWithOptions(new String[]{"--Select--","Yes","No","Not Available"},h);
         if(x.equals("status"))return dropdownInputWithOptions(new String[]{"--Select--","Active","Inactive","Working","Not Working","Disposed"},h);
         if(x.equals("remarks")){EditText e=input(h);e.setMinLines(3);e.setGravity(Gravity.TOP);return e;}
@@ -272,8 +273,107 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void runVision(Uri uri){
-        try{InputImage img=InputImage.fromFilePath(this,uri);TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(img).addOnSuccessListener(r->{String t=r.getText()==null?"":r.getText().trim();suggestedType=t.length()>80?t.substring(0,80):t;ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS).process(img).addOnSuccessListener(labels->{if(suggestedType.isEmpty()&&!labels.isEmpty())suggestedType=labels.get(0).getText();if(fieldViews.containsKey("Equipment Type")&&get("Equipment Type").isEmpty())put("Equipment Type",suggestedType);Toast.makeText(this,"Detected: "+(suggestedType.isEmpty()?"Review manually":suggestedType),Toast.LENGTH_LONG).show();}).addOnFailureListener(e->Toast.makeText(this,"Photo saved. Image identify unavailable.",Toast.LENGTH_SHORT).show());}).addOnFailureListener(e->Toast.makeText(this,"Photo saved. OCR unavailable.",Toast.LENGTH_SHORT).show());}catch(Exception e){Toast.makeText(this,"Photo saved. OCR error.",Toast.LENGTH_SHORT).show();}
+        try{
+            InputImage img=InputImage.fromFilePath(this,uri);
+            TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(img)
+            .addOnSuccessListener(r->{
+                String text=r.getText()==null?"":r.getText().trim();
+                int filled=applyOcrToRequirementFields(text);
+                suggestedType=firstNonEmpty(suggestedType,findLabeledValue(text,"equipment type","item type","type of vehicle","vehicle type"));
+                ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS).process(img)
+                .addOnSuccessListener(labels->{
+                    if(suggestedType.isEmpty()&&!labels.isEmpty()) suggestedType=labels.get(0).getText();
+                    if(filled==0 && fieldViews.containsKey("Equipment Type") && get("Equipment Type").isEmpty() && !suggestedType.isEmpty()) put("Equipment Type",suggestedType);
+                    Toast.makeText(this,filled>0 ? "OCR complete: "+filled+" requirement field(s) filled. Please review." : "OCR complete. Please review fields manually.",Toast.LENGTH_LONG).show();
+                })
+                .addOnFailureListener(e->Toast.makeText(this,filled>0?"OCR filled "+filled+" field(s).":"Photo saved. Please review OCR fields.",Toast.LENGTH_SHORT).show());
+            })
+            .addOnFailureListener(e->Toast.makeText(this,"Photo saved. OCR unavailable.",Toast.LENGTH_SHORT).show());
+        }catch(Exception e){Toast.makeText(this,"Photo saved. OCR error.",Toast.LENGTH_SHORT).show();}
     }
+
+    int applyOcrToRequirementFields(String text){
+        if(text==null||text.trim().isEmpty()) return 0;
+        int n=0;
+        n+=fillFromLabels(text,"Serial Number","serial number","serial no","s.no","s no");
+        n+=fillFromLabels(text,"Model Name","model name","model no","model number","model");
+        n+=fillFromLabels(text,"Manufacturing Name","manufacturer name","manufacturing name","manufacturer","make");
+        n+=fillFromLabels(text,"Manufacturing Date","manufacturing date","mfg date","mfg.");
+        n+=fillFromLabels(text,"Purchase Order Number","purchase order number","purchase order no","po number","po no");
+        n+=fillFromLabels(text,"Equipment Number","equipment number","equipment no","asset number","asset no");
+        n+=fillFromLabels(text,"Building Name","building name","building");
+        n+=fillFromLabels(text,"Office Name","office name","office");
+        n+=fillFromLabels(text,"Room Section","room section","room","section");
+        n+=fillFromLabels(text,"Designation","designation");
+        n+=fillFromLabels(text,"Used by Person Name","used by person name","used by","user name","employee name");
+        n+=fillFromLabels(text,"Processor","processor","cpu");
+        n+=fillFromLabels(text,"Graphics Card","graphics card","gpu");
+        n+=fillFromLabels(text,"Ram","ram","memory");
+        n+=fillFromLabels(text,"AC Capacity","ac capacity","capacity");
+        n+=fillFromLabels(text,"Warranty Date","warranty date","warranty start");
+        n+=fillFromLabels(text,"Warranty Expiry Date","warranty expiry date","warranty expiry");
+        n+=fillFromLabels(text,"Equipment Type","equipment type","equipment");
+        n+=fillFromLabels(text,"Item Type","item type","item");
+        n+=fillFromLabels(text,"Scheme Name","scheme name","scheme");
+        n+=fillFromLabels(text,"Vehicle ID","vehicle id");
+        n+=fillFromLabels(text,"TYPE_OF_VEHICLE","type of vehicle","vehicle type");
+        n+=fillFromLabels(text,"VEHICLE DESCRIPTION","vehicle description","description");
+        n+=fillFromLabels(text,"VEHICLE NO","vehicle no","vehicle number","registration no","registration number");
+        n+=fillFromLabels(text,"Remarks","remarks","remark");
+        if(n==0){
+            n+=fillHeuristic(text,"Serial Number",new String[]{"serial"});
+            n+=fillHeuristic(text,"Model Name",new String[]{"model"});
+            n+=fillHeuristic(text,"Manufacturing Name",new String[]{"manufacturer","manufactured by","make"});
+            n+=fillHeuristic(text,"Equipment Number",new String[]{"equipment no","asset no"});
+        }
+        return n;
+    }
+
+    int fillFromLabels(String text,String field,String... labels){
+        if(!fieldViews.containsKey(field)||!get(field).isEmpty()) return 0;
+        String v=findLabeledValue(text,labels);
+        if(v.isEmpty()) return 0;
+        put(field,v); return 1;
+    }
+
+    int fillHeuristic(String text,String field,String[] labels){
+        if(!fieldViews.containsKey(field)||!get(field).isEmpty()) return 0;
+        String low=text.toLowerCase(Locale.US);
+        for(String label:labels){
+            int p=low.indexOf(label.toLowerCase(Locale.US));
+            if(p>=0){
+                String rest=text.substring(Math.min(text.length(),p+label.length())).replaceFirst("^[\\s:#=-]+","");
+                String v=cleanOcrValue(rest.split("\\n")[0]);
+                if(!v.isEmpty()){put(field,v);return 1;}
+            }
+        }
+        return 0;
+    }
+
+    String findLabeledValue(String text,String... labels){
+        String[] lines=text.split("\\r?\\n");
+        for(String raw:lines){
+            String line=raw.trim();
+            if(line.isEmpty()) continue;
+            String low=line.toLowerCase(Locale.US);
+            for(String label:labels){
+                String l=label.toLowerCase(Locale.US);
+                int p=low.indexOf(l);
+                if(p>=0){
+                    String rest=line.substring(Math.min(line.length(),p+l.length())).replaceFirst("^[\\s:#=-]+","");
+                    if(!rest.isEmpty()) return cleanOcrValue(rest);
+                }
+            }
+        }
+        return "";
+    }
+
+    String cleanOcrValue(String v){
+        if(v==null) return "";
+        return v.replaceAll("\\s+"," ").replaceAll("^[\\s:;,#=-]+","").replaceAll("[\\s]+$","").trim();
+    }
+
+    String firstNonEmpty(String a,String b){return a!=null&&!a.trim().isEmpty()?a:b;}
 
     void saveBatch(){
         if(batch.isEmpty())return;final ArrayList<Entry> copy=new ArrayList<>(batch);
