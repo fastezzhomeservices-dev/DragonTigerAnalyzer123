@@ -25,3 +25,4 @@ jobs:
         with:
           name: BIHAR-SURVEY-NON-IT-APK
           path: bihar-survey-non-it/app/build/outputs/apk/debug/app-debug.apk
+
