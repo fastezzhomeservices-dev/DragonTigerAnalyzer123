@@ -290,9 +290,7 @@ Photo : ").append(e.photoPath.isEmpty()?"MISSING":"READY");TextView d=label(sb.t
 
     void showSaved(){
         ArrayList<SurveyDbHelper.EntryRow> rows=db.all();body.removeAllViews();body.addView(title("SAVED / REJECTED ENTRIES"));body.addView(label("Total records: "+rows.size()));
-        for(SurveyDbHelper.EntryRow e:rows){LinearLayout c=sectionCard();c.addView(label(e.category+" • "+e.itemType));TextView d=label(e.office+" | "+e.section+"
-"+e.uniqueId+"
-GPS: "+String.format(Locale.US,"%.6f, %.6f",e.lat,e.lon));d.setTextColor(secondaryText());c.addView(d);Button del=smallButton("DELETE");c.addView(del);del.setOnClickListener(v->{db.delete(e.id);deletePhoto(e.photoPath);showSaved();});body.addView(c);}
+        for(SurveyDbHelper.EntryRow e:rows){LinearLayout c=sectionCard();c.addView(label(e.category+" • "+e.itemType));TextView d=label(e.office+" | "+e.section+"\n"+e.uniqueId+"\nGPS: "+String.format(Locale.US,"%.6f, %.6f",e.lat,e.lon));d.setTextColor(secondaryText());c.addView(d);Button del=smallButton("DELETE");c.addView(del);del.setOnClickListener(v->{db.delete(e.id);deletePhoto(e.photoPath);showSaved();});body.addView(c);}
         Button back=smallButton("BACK HOME");body.addView(back,new LinearLayout.LayoutParams(-1,dp(48)));back.setOnClickListener(v->home());
     }
 
