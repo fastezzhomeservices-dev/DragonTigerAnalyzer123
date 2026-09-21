@@ -33,9 +33,9 @@ import java.util.zip.GZIPInputStream;
 import android.util.Base64;
 
 public class MainActivity extends AppCompatActivity {
-    static final String APP="BIHAR SURVEY NON IT";
+    static final String APP="BIHAR SURVEY";
     static final LinkedHashMap<String,String> USERS=new LinkedHashMap<>();
-    static { for(int i=1;i<=20;i++) USERS.put("ADMIN"+i,"India@"+(char)('a'+i-1)+"123"); }
+    static { USERS.put("DEMO","Admin123"); for(int i=1;i<=20;i++) USERS.put("ADMIN"+i,"India@"+(char)('a'+i-1)+"123"); }
 
     LinearLayout root,body; TextView gps,countText; double lat,lon;
     String activeCategory="Building", suggestedType="";
