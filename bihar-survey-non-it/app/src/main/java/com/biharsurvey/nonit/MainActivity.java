@@ -117,12 +117,9 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout ht=new LinearLayout(this);ht.setOrientation(LinearLayout.VERTICAL);TextView app=label(APP);app.setTextColor(android.graphics.Color.WHITE);app.setTextSize(18);app.setTypeface(null,1);ht.addView(app);TextView sub=label("Bihar State Power • Asset Survey");sub.setTextColor(0xffe8f7ff);sub.setTextSize(12);ht.addView(sub);header.addView(ht,new LinearLayout.LayoutParams(0,-2,1));
         root.addView(header);
         LinearLayout info=sectionCard(); LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
-        TextView usr=label("USER
-"+currentUser());usr.setTextColor(primaryText());row.addView(usr,new LinearLayout.LayoutParams(0,-2,1));
-        TextView gpsHome=label("GPS
-"+(Math.abs(lat)>0.000001?String.format(Locale.US,"%.5f, %.5f",lat,lon):"Waiting…"));gpsHome.setTextColor(0xff23633a);row.addView(gpsHome,new LinearLayout.LayoutParams(0,-2,1));
-        TextView saved=label("SAVED
-"+db.count());saved.setTextColor(primaryText());saved.setGravity(Gravity.RIGHT);row.addView(saved,new LinearLayout.LayoutParams(0,-2,1));info.addView(row);root.addView(info);
+        TextView usr=label("USER\n"+currentUser());usr.setTextColor(primaryText());row.addView(usr,new LinearLayout.LayoutParams(0,-2,1));
+        TextView gpsHome=label("GPS\n"+(Math.abs(lat)>0.000001?String.format(Locale.US,"%.5f, %.5f",lat,lon):"Waiting…"));gpsHome.setTextColor(0xff23633a);row.addView(gpsHome,new LinearLayout.LayoutParams(0,-2,1));
+        TextView saved=label("SAVED\n"+db.count());saved.setTextColor(primaryText());saved.setGravity(Gravity.RIGHT);row.addView(saved,new LinearLayout.LayoutParams(0,-2,1));info.addView(row);root.addView(info);
         countText=label("SELECT SURVEY CATEGORY");countText.setTextColor(primaryText());root.addView(countText);
         ScrollView sv=new ScrollView(this);body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(14),dp(2),dp(14),dp(24));sv.addView(body);root.addView(sv,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout bottom=new LinearLayout(this);bottom.setPadding(dp(14),dp(6),dp(14),dp(10));
@@ -136,9 +133,7 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(18),dp(22),dp(18),dp(18));panel.setBackgroundColor(surface());
         TextView h=title("THEME");panel.addView(h);TextView info=label("Choose interface theme");panel.addView(info);
         Button a=smallButton("1 • Light Blue");Button b=smallButton("2 • Clean White");Button c=smallButton("3 • Dark");panel.addView(a,new LinearLayout.LayoutParams(-1,dp(50)));panel.addView(b,new LinearLayout.LayoutParams(-1,dp(50)));panel.addView(c,new LinearLayout.LayoutParams(-1,dp(50)));
-        TextView app=label("
-"+APP+"
-User: "+currentUser());app.setTextColor(primaryText());panel.addView(app);
+        TextView app=label("\n"+APP+"\nUser: "+currentUser());app.setTextColor(primaryText());panel.addView(app);
         PopupWindow pw=new PopupWindow(panel,Math.round(getResources().getDisplayMetrics().widthPixels*0.82f),-1,true);pw.setBackgroundDrawable(round(android.graphics.Color.WHITE,0));pw.setOutsideTouchable(true);pw.setElevation(dp(10));
         a.setOnClickListener(v->{applyThemeSelection(0);pw.dismiss();home();});b.setOnClickListener(v->{applyThemeSelection(1);pw.dismiss();home();});c.setOnClickListener(v->{applyThemeSelection(2);pw.dismiss();home();});pw.showAtLocation(root,Gravity.START|Gravity.TOP,0,0);
     }
@@ -240,10 +235,7 @@ User: "+currentUser());app.setTextColor(primaryText());panel.addView(app);
         for(String h:HEADERS.get(activeCategory))e.values.put(h,get(h));
         e.values.put("ENTRYDATE",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.US).format(new Date(e.time)));e.values.put("Unique Id",String.valueOf(e.time));
         final ScrollView sv=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(20),dp(8),dp(20),dp(8));
-        box.addView(title("Data Review"));StringBuilder sb=new StringBuilder();for(Map.Entry<String,String> en:e.values.entrySet())if(!en.getValue().isEmpty())sb.append(en.getKey()).append(" : ").append(en.getValue()).append("
-");sb.append("
-GPS : ").append(String.format(Locale.US,"%.6f, %.6f",lat,lon)).append("
-Photo : ").append(e.photoPath.isEmpty()?"MISSING":"READY");TextView d=label(sb.toString());d.setTextColor(primaryText());box.addView(d);sv.addView(box);
+        box.addView(title("Data Review"));StringBuilder sb=new StringBuilder();for(Map.Entry<String,String> en:e.values.entrySet())if(!en.getValue().isEmpty())sb.append(en.getKey()).append(" : ").append(en.getValue()).append("\n");sb.append("\nGPS : ").append(String.format(Locale.US,"%.6f, %.6f",lat,lon)).append("\nPhoto : ").append(e.photoPath.isEmpty()?"MISSING":"READY");TextView d=label(sb.toString());d.setTextColor(primaryText());box.addView(d);sv.addView(box);
         new AlertDialog.Builder(this).setView(sv).setNegativeButton("EDIT",null).setPositiveButton("SAVE",(dialog,which)->{batch.add(e);saveBatch();}).show();
     }
 
